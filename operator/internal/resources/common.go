@@ -90,17 +90,29 @@ func JVMEnv(jvm v1alpha1.JVMOptions, limitMB int32) []corev1.EnvVar {
 }
 
 func UserEnv(base []corev1.EnvVar, extra []v1alpha1.EnvVar) []corev1.EnvVar {
+	index := make(map[string]int, len(base))
+	for i, env := range base {
+		index[env.Name] = i
+	}
 	for _, e := range extra {
+		if i, ok := index[e.Name]; ok {
+			base[i].Value = e.Value
+			continue
+		}
+		index[e.Name] = len(base)
 		base = append(base, corev1.EnvVar{Name: e.Name, Value: e.Value})
 	}
 	return base
 }
 
-func TCPProbe(initialDelay int32) *corev1.Probe {
+func TCPProbe(initialDelay int32, port int32) *corev1.Probe {
+	if port == 0 {
+		port = ContainerPort
+	}
 	return &corev1.Probe{
 		ProbeHandler: corev1.ProbeHandler{
 			TCPSocket: &corev1.TCPSocketAction{
-				Port: intstr.FromInt32(ContainerPort),
+				Port: intstr.FromInt32(port),
 			},
 		},
 		InitialDelaySeconds: initialDelay,

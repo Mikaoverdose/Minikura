@@ -122,7 +122,7 @@ func minecraftPodSpec(mc *v1alpha1.MinecraftServer, stateful bool) corev1.PodSpe
 			}},
 			Env:            minecraftEnv(mc),
 			VolumeMounts:   mounts,
-			ReadinessProbe: TCPProbe(initialDelay),
+			ReadinessProbe: TCPProbe(initialDelay, ContainerPort),
 			Resources:      ResourceRequirements(mc.Spec.Resources),
 		}},
 		Volumes: volumes,

@@ -77,10 +77,10 @@ func TestUserEnvOverridesDefaults(t *testing.T) {
 	base := []corev1.EnvVar{{Name: "TYPE", Value: "VANILLA"}}
 	got := UserEnv(base, []v1alpha1.EnvVar{{Name: "TYPE", Value: "PAPER"}})
 
-	if len(got) != 2 {
-		t.Fatalf("len = %d, want 2", len(got))
+	if len(got) != 1 {
+		t.Fatalf("len = %d, want 1", len(got))
 	}
-	if got[len(got)-1].Value != "PAPER" {
-		t.Errorf("last TYPE = %q, want PAPER", got[len(got)-1].Value)
+	if got[0].Value != "PAPER" {
+		t.Errorf("TYPE = %q, want PAPER", got[0].Value)
 	}
 }

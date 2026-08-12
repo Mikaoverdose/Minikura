@@ -28,6 +28,9 @@ type ReverseProxyServerReconciler struct {
 // +kubebuilder:rbac:groups=minikura.kirameki.cafe,resources=reverseproxyservers,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=minikura.kirameki.cafe,resources=reverseproxyservers/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=minikura.kirameki.cafe,resources=reverseproxyservers/finalizers,verbs=update
+// +kubebuilder:rbac:groups=minikura.kirameki.cafe,resources=minecraftservers,verbs=get;list;watch
+// +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups="",resources=services;configmaps,verbs=get;list;watch;create;update;patch;delete
 
 func (r *ReverseProxyServerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	var rp v1alpha1.ReverseProxyServer
@@ -182,11 +185,25 @@ func (r *ReverseProxyServerReconciler) proxiesForServer(ctx context.Context, obj
 
 	reqs := make([]reconcile.Request, 0, len(list.Items))
 	for _, rp := range list.Items {
+		if !matchesBackend(rp, obj) {
+			continue
+		}
 		reqs = append(reqs, reconcile.Request{
 			NamespacedName: client.ObjectKey{Name: rp.Name, Namespace: rp.Namespace},
 		})
 	}
 	return reqs
+}
+
+func matchesBackend(rp v1alpha1.ReverseProxyServer, obj client.Object) bool {
+	if rp.Spec.BackendSelector == nil {
+		return true
+	}
+	selector, err := metav1.LabelSelectorAsSelector(rp.Spec.BackendSelector)
+	if err != nil {
+		return false
+	}
+	return selector.Matches(labels.Set(obj.GetLabels()))
 }
 
 func (r *ReverseProxyServerReconciler) SetupWithManager(mgr ctrl.Manager) error {

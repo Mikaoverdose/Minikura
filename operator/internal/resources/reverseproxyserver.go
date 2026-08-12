@@ -92,15 +92,7 @@ func ProxyDeployment(rp *v1alpha1.ReverseProxyServer) *appsv1.Deployment {
 						VolumeMounts: []corev1.VolumeMount{
 							{Name: "config", MountPath: "/config"},
 						},
-						ReadinessProbe: &corev1.Probe{
-							ProbeHandler: corev1.ProbeHandler{
-								TCPSocket: &corev1.TCPSocketAction{
-									Port: intstr.FromInt32(rp.Spec.ListenPort),
-								},
-							},
-							InitialDelaySeconds: 30,
-							PeriodSeconds:       10,
-						},
+						ReadinessProbe: TCPProbe(30, rp.Spec.ListenPort),
 						Resources: ResourceRequirements(rp.Spec.Resources),
 					}},
 					Volumes: []corev1.Volume{{
