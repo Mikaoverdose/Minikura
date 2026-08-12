@@ -9,8 +9,10 @@ export function useServerList() {
   const [normalServers, setNormalServers] = useState<NormalServer[]>([]);
   const [reverseProxies, setReverseProxies] = useState<ReverseProxyServer[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchServers = useCallback(async () => {
+    setError(null);
     try {
       const [normalRes, proxyRes] = await Promise.all([
         api.api.servers.get(),
@@ -23,7 +25,8 @@ export function useServerList() {
       if (proxyRes.data) {
         setReverseProxies(proxyRes.data as unknown as ReverseProxyServer[]);
       }
-    } catch (_error) {
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Failed to load servers");
     } finally {
       setLoading(false);
     }
@@ -49,6 +52,7 @@ export function useServerList() {
     normalServers,
     reverseProxies,
     loading,
+    error,
     refresh: fetchServers,
     deleteServer,
   };
