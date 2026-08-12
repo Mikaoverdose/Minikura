@@ -11,6 +11,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     wget \
     git \
     jq \
+    make \
     unzip \
     ca-certificates \
     gnupg \

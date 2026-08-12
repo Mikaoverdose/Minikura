@@ -1,0 +1,9 @@
+{
+  "name": "@minikura/operator",
+  "private": true,
+  "scripts": {
+    "dev": "go run ./cmd --leader-elect=false",
+    "build": "go build -o bin/operator ./cmd",
+    "test": "go test ./... -race"
+  }
+}

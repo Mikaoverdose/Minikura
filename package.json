@@ -3,7 +3,8 @@
   "version": "0.0.1",
   "workspaces": [
     "apps/*",
-    "packages/*"
+    "packages/*",
+    "operator"
   ],
   "packageManager": "bun@1.3.6",
   "scripts": {
@@ -20,7 +21,7 @@
     "db:studio": "bun --filter @minikura/db studio",
     "db:push": "bun --filter @minikura/db push",
     "db:reset": "bun --filter @minikura/db reset",
-    "operator:dev": "make -C operator run",
+    "operator:dev": "bun --cwd operator run dev",
     "operator:build": "make -C operator build",
     "operator:test": "make -C operator test",
     "operator:crds": "make -C operator install-crds",
