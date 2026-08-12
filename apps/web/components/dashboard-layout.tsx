@@ -1,16 +1,17 @@
 "use client";
 
-import { GitGraph, Loader2, LogOut, Network, Server, Settings, Users } from "lucide-react";
+import { GitGraph, LogOut, type LucideIcon, Network, Server, Users } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
+import { BrandLockup } from "@/components/brand";
+import { FullScreenLoader } from "@/components/page-layout";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -29,13 +30,30 @@ import {
 } from "@/components/ui/sidebar";
 import { signOut, useSession } from "@/lib/auth-client";
 
-const menuItems = [
-  { href: "/dashboard/users", icon: Users, label: "Users" },
-  { href: "/dashboard/servers", icon: Server, label: "Servers" },
-  { href: "/dashboard/topology", icon: GitGraph, label: "Network" },
-];
+type NavigationGroup = {
+  label: string;
+  items: Array<{
+    href: string;
+    icon: LucideIcon;
+    label: string;
+    context: string;
+  }>;
+};
 
-const k8sMenuItems = [{ href: "/dashboard/k8s", icon: Network, label: "Resources" }];
+const navigation: NavigationGroup[] = [
+  {
+    label: "Operations",
+    items: [
+      { href: "/dashboard/users", icon: Users, label: "Users", context: "Identity" },
+      { href: "/dashboard/servers", icon: Server, label: "Servers", context: "Workloads" },
+      { href: "/dashboard/topology", icon: GitGraph, label: "Network", context: "Topology" },
+    ],
+  },
+  {
+    label: "Kubernetes",
+    items: [{ href: "/dashboard/k8s", icon: Network, label: "Resources", context: "Cluster" }],
+  },
+];
 
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -48,21 +66,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
     }
   }, [session, isPending, router]);
 
-  if (isPending) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
-
-  if (!session?.user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
+  if (isPending || !session?.user) return <FullScreenLoader />;
 
   const handleSignOut = async () => {
     await signOut();
@@ -75,69 +79,73 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
       .map((n) => n[0])
       .join("")
       .toUpperCase() || "U";
+  const currentPage = navigation
+    .flatMap((group) => group.items)
+    .find((item) => pathname === item.href || pathname.startsWith(`${item.href}/`));
 
   return (
-    <SidebarProvider>
-      <Sidebar>
-        <SidebarHeader className="border-b px-6 py-4">
-          <h2 className="text-lg font-semibold">Minikura</h2>
+    <SidebarProvider
+      style={
+        {
+          "--sidebar-width": "17rem",
+          "--sidebar-width-icon": "4rem",
+        } as React.CSSProperties
+      }
+    >
+      <Sidebar className="border-sidebar-border">
+        <SidebarHeader className="border-b border-sidebar-border px-5 py-5">
+          <BrandLockup
+            subtitle="Control plane"
+            compact
+            textClassName="group-data-[collapsible=icon]:hidden"
+          />
         </SidebarHeader>
-        <SidebarContent>
-          <SidebarGroup>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {menuItems.map((item) => (
-                  <SidebarMenuItem key={item.href}>
-                    <SidebarMenuButton asChild isActive={pathname === item.href}>
-                      <Link href={item.href}>
-                        <item.icon className="h-4 w-4" />
-                        <span>{item.label}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-          <SidebarGroup>
-            <SidebarGroupLabel>Kubernetes</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {k8sMenuItems.map((item) => (
-                  <SidebarMenuItem key={item.href}>
-                    <SidebarMenuButton asChild isActive={pathname === item.href}>
-                      <Link href={item.href}>
-                        <item.icon className="h-4 w-4" />
-                        <span>{item.label}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
+        <SidebarContent className="py-4">
+          {navigation.map((group) => (
+            <SidebarGroup key={group.label} className="px-3">
+              <SidebarGroupLabel className="font-mono text-[9px] uppercase tracking-[0.2em]">
+                {group.label}
+              </SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {group.items.map((item) => (
+                    <SidebarMenuItem key={item.href}>
+                      <SidebarMenuButton
+                        asChild
+                        isActive={pathname === item.href || pathname.startsWith(`${item.href}/`)}
+                        className="h-11 rounded-sm px-3 text-sm font-bold data-[active=true]:border-l-2 data-[active=true]:border-sidebar-primary"
+                      >
+                        <Link href={item.href}>
+                          <item.icon className="h-4 w-4" />
+                          <span>{item.label}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          ))}
         </SidebarContent>
-        <div className="border-t p-4">
+        <div className="border-t border-sidebar-border p-3">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="w-full justify-start gap-2 px-2">
-                <Avatar className="h-8 w-8">
+              <Button
+                variant="ghost"
+                className="h-auto w-full justify-start gap-3 overflow-hidden px-2 py-2 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+              >
+                <Avatar className="h-8 w-8 rounded-sm">
                   <AvatarFallback>{userInitials}</AvatarFallback>
                 </Avatar>
-                <div className="flex flex-col items-start text-sm">
-                  <span className="font-medium">{session?.user?.name}</span>
-                  <span className="text-xs text-muted-foreground">{session?.user?.email}</span>
+                <div className="flex min-w-0 flex-col items-start normal-case tracking-normal group-data-[collapsible=icon]:hidden">
+                  <span className="max-w-40 truncate text-xs font-bold">{session?.user?.name}</span>
+                  <span className="max-w-40 truncate font-mono text-[9px] text-sidebar-foreground/45">
+                    {session?.user?.email}
+                  </span>
                 </div>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuItem asChild>
-                <Link href="/dashboard/settings">
-                  <Settings className="mr-2 h-4 w-4" />
-                  Settings
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleSignOut}>
                 <LogOut className="mr-2 h-4 w-4" />
                 Sign Out
@@ -147,11 +155,14 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         </div>
       </Sidebar>
       <SidebarInset>
-        <header className="flex h-16 items-center gap-4 border-b bg-background px-6">
-          <SidebarTrigger />
-          <div className="flex-1" />
+        <header className="sticky top-0 z-20 flex h-14 items-center gap-4 border-b bg-background/95 px-4 backdrop-blur-sm sm:px-6">
+          <SidebarTrigger className="border border-border bg-card" />
+          <div className="h-5 w-px bg-border" />
+          <span className="truncate font-mono text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground">
+            {currentPage ? `${currentPage.context} / ${currentPage.label}` : "Control plane"}
+          </span>
         </header>
-        <main className="flex-1 p-6 min-w-0 overflow-auto">{children}</main>
+        <main className="min-w-0 flex-1 overflow-auto p-4 sm:p-6 lg:p-8">{children}</main>
       </SidebarInset>
     </SidebarProvider>
   );

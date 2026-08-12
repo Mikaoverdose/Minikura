@@ -1,10 +1,12 @@
 "use client";
 
-import { Loader2 } from "lucide-react";
+import { ArrowRight, Check } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { AuthFormCard, FormError } from "@/components/auth/auth-form-card";
+import { BrandMark } from "@/components/brand";
+import { FullScreenLoader } from "@/components/page-layout";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { api } from "@/lib/api-client";
@@ -77,68 +79,86 @@ export default function BootstrapPage() {
     }
   };
 
-  if (checkingStatus) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
+  if (checkingStatus) return <FullScreenLoader label="Checking setup" />;
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-center">Welcome to Minikura</CardTitle>
-          <CardDescription className="text-center">
-            Create your admin account to get started
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Full Name</Label>
-              <Input id="name" name="name" placeholder="John Doe" required autoFocus />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                name="email"
-                type="email"
-                placeholder="admin@example.com"
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                name="password"
-                type="password"
-                placeholder="••••••••"
-                minLength={8}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirm Password</Label>
-              <Input
-                id="confirmPassword"
-                name="confirmPassword"
-                type="password"
-                placeholder="••••••••"
-                minLength={8}
-                required
-              />
-            </div>
-            {error && <div className="text-sm text-red-600 text-center">{error}</div>}
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Creating..." : "Create Admin Account"}
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
-    </div>
+    <main className="auth-grid flex min-h-screen items-center justify-center bg-sidebar p-5 sm:p-10">
+      <div className="grid w-full max-w-5xl overflow-hidden border border-sidebar-border bg-background text-foreground shadow-[12px_12px_0_color-mix(in_oklch,var(--sidebar-primary)_18%,transparent)] lg:grid-cols-[0.8fr_1.2fr]">
+        <section className="flex flex-col justify-between bg-primary p-8 text-primary-foreground sm:p-10">
+          <BrandMark inverted />
+          <div className="my-16">
+            <span className="page-eyebrow text-primary-foreground/60">System bootstrap / 01</span>
+            <h1 className="text-5xl font-black uppercase leading-[0.9] tracking-[-0.055em]">
+              Build your command center.
+            </h1>
+            <p className="mt-5 text-sm leading-6 text-primary-foreground/65">
+              The first account controls users, workloads, routing, and cluster visibility.
+            </p>
+          </div>
+          <div className="space-y-3 font-mono text-[10px] font-bold uppercase tracking-[0.12em]">
+            <p className="flex items-center gap-2">
+              <Check className="size-3" /> Admin authority
+            </p>
+            <p className="flex items-center gap-2">
+              <Check className="size-3" /> Secure session
+            </p>
+            <p className="flex items-center gap-2">
+              <Check className="size-3" /> Ready in one step
+            </p>
+          </div>
+        </section>
+        <AuthFormCard
+          title="Create Operator"
+          description="Initialize Minikura with an administrator identity."
+          className="max-w-none rounded-none border-0 bg-card py-8 shadow-none sm:py-10"
+          headerClassName="px-7 sm:px-10"
+          contentClassName="px-7 sm:px-10"
+        >
+            <form onSubmit={handleSubmit} className="space-y-5">
+              <div className="space-y-2">
+                <Label htmlFor="name">Full Name</Label>
+                <Input id="name" name="name" placeholder="John Doe" required autoFocus />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  placeholder="admin@example.com"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  name="password"
+                  type="password"
+                  placeholder="Minimum 8 characters"
+                  minLength={8}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword">Confirm Password</Label>
+                <Input
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  type="password"
+                  placeholder="Repeat password"
+                  minLength={8}
+                  required
+                />
+              </div>
+              <FormError message={error} />
+              <Button type="submit" size="lg" className="w-full" disabled={loading}>
+                {loading ? "Initializing..." : "Initialize Console"}
+                {!loading && <ArrowRight className="ml-auto" />}
+              </Button>
+            </form>
+        </AuthFormCard>
+      </div>
+    </main>
   );
 }
