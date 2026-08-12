@@ -41,6 +41,12 @@ func (r *ReverseProxyServerReconciler) Reconcile(ctx context.Context, req ctrl.R
 	if !rp.DeletionTimestamp.IsZero() {
 		return ctrl.Result{}, nil
 	}
+	if rp.Spec.Type != v1alpha1.ProxyVelocity && rp.Spec.Type != v1alpha1.ProxyBungeeCord {
+		return r.fail(ctx, &rp, "InvalidSpec", fmt.Errorf("unsupported proxy type %q", rp.Spec.Type))
+	}
+	if rp.Spec.ExternalPort <= 0 || rp.Spec.ListenPort <= 0 {
+		return r.fail(ctx, &rp, "InvalidSpec", fmt.Errorf("externalPort and listenPort must be set"))
+	}
 
 	if err := apply(ctx, r.Client, &rp, resources.ProxyConfigMap(&rp), r.Scheme); err != nil {
 		return r.fail(ctx, &rp, "ConfigMapFailed", err)
@@ -57,7 +63,10 @@ func (r *ReverseProxyServerReconciler) Reconcile(ctx context.Context, req ctrl.R
 		return r.fail(ctx, &rp, "PruneFailed", err)
 	}
 
-	return ctrl.Result{}, r.updateStatus(ctx, &rp)
+	if err := r.updateStatus(ctx, &rp); err != nil {
+		return r.fail(ctx, &rp, "StatusFailed", err)
+	}
+	return ctrl.Result{}, nil
 }
 
 func (r *ReverseProxyServerReconciler) pruneStaleResources(ctx context.Context, rp *v1alpha1.ReverseProxyServer) error {
@@ -160,6 +169,7 @@ func (r *ReverseProxyServerReconciler) fail(ctx context.Context, rp *v1alpha1.Re
 	return failWithStatus(ctx, r.Client, rp, cause, func() {
 		rp.Status.Phase = v1alpha1.PhaseFailed
 		rp.Status.Message = cause.Error()
+		rp.Status.ObservedGeneration = rp.Generation
 		setCondition(&rp.Status.Conditions, metav1.Condition{
 			Type:               v1alpha1.ConditionReady,
 			Status:             metav1.ConditionFalse,

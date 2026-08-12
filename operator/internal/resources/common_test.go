@@ -125,6 +125,35 @@ func TestUserEnvClearsValueFromOnOverride(t *testing.T) {
 	}
 }
 
+func TestUserEnvSupportsValueFrom(t *testing.T) {
+	extra := []v1alpha1.EnvVar{{
+		Name:  "FROM_SECRET",
+		Value: "ignored",
+		ValueFrom: &corev1.EnvVarSource{SecretKeyRef: &corev1.SecretKeySelector{
+			LocalObjectReference: corev1.LocalObjectReference{Name: "settings"},
+			Key:                  "value",
+		}},
+	}}
+	got := UserEnv(nil, extra)
+	if len(got) != 1 || got[0].ValueFrom == nil || got[0].ValueFrom.SecretKeyRef == nil {
+		t.Fatalf("valueFrom was not preserved: %+v", got)
+	}
+	if got[0].ValueFrom.SecretKeyRef.Name != "settings" {
+		t.Errorf("secret name = %q", got[0].ValueFrom.SecretKeyRef.Name)
+	}
+	if got[0].Value != "" {
+		t.Errorf("literal value = %q, want empty with valueFrom", got[0].Value)
+	}
+}
+
+func TestUserEnvDoesNotOverrideProtectedValues(t *testing.T) {
+	base := []corev1.EnvVar{{Name: "MINIKURA_API_KEY", Value: "managed"}}
+	got := UserEnv(base, []v1alpha1.EnvVar{{Name: "MINIKURA_API_KEY", Value: "user"}}, "MINIKURA_API_KEY")
+	if got[0].Value != "managed" {
+		t.Errorf("protected value = %q, want managed", got[0].Value)
+	}
+}
+
 func TestUserEnvAppendsUnknownKeys(t *testing.T) {
 	base := []corev1.EnvVar{{Name: "TYPE", Value: "PAPER"}}
 	got := UserEnv(base, []v1alpha1.EnvVar{{Name: "EXTRA", Value: "1"}})

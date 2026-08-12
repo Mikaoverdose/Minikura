@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"fmt"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -10,7 +11,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	v1alpha1 "github.com/YuzuZensai/Minikura/operator/api/v1alpha1"
 	"github.com/YuzuZensai/Minikura/operator/internal/resources"
@@ -31,8 +31,6 @@ type MinecraftServerReconciler struct {
 // +kubebuilder:rbac:groups="",resources=events,verbs=create;patch
 
 func (r *MinecraftServerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	logger := log.FromContext(ctx)
-
 	var mc v1alpha1.MinecraftServer
 	if err := r.Get(ctx, req.NamespacedName, &mc); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
@@ -40,6 +38,12 @@ func (r *MinecraftServerReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 
 	if !mc.DeletionTimestamp.IsZero() {
 		return ctrl.Result{}, nil
+	}
+	if mc.Spec.Type != v1alpha1.ServerStateful && mc.Spec.Type != v1alpha1.ServerStateless {
+		return r.fail(ctx, &mc, "InvalidSpec", fmt.Errorf("unsupported server type %q", mc.Spec.Type))
+	}
+	if mc.Spec.ListenPort <= 0 {
+		return r.fail(ctx, &mc, "InvalidSpec", fmt.Errorf("listenPort must be set"))
 	}
 
 	if err := apply(ctx, r.Client, &mc, resources.MinecraftConfigMap(&mc), r.Scheme); err != nil {
@@ -56,10 +60,13 @@ func (r *MinecraftServerReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 	}
 
 	if err := r.pruneOppositeWorkload(ctx, &mc, stateful); err != nil {
-		logger.Error(err, "failed to prune previous workload")
+		return r.fail(ctx, &mc, "PruneFailed", err)
 	}
 
-	return ctrl.Result{}, r.updateStatus(ctx, &mc, stateful)
+	if err := r.updateStatus(ctx, &mc, stateful); err != nil {
+		return r.fail(ctx, &mc, "StatusFailed", err)
+	}
+	return ctrl.Result{}, nil
 }
 
 func (r *MinecraftServerReconciler) reconcileWorkload(ctx context.Context, mc *v1alpha1.MinecraftServer, stateful bool) error {
@@ -155,6 +162,7 @@ func (r *MinecraftServerReconciler) fail(ctx context.Context, mc *v1alpha1.Minec
 	return failWithStatus(ctx, r.Client, mc, cause, func() {
 		mc.Status.Phase = v1alpha1.PhaseFailed
 		mc.Status.Message = cause.Error()
+		mc.Status.ObservedGeneration = mc.Generation
 		setCondition(&mc.Status.Conditions, metav1.Condition{
 			Type:               v1alpha1.ConditionReady,
 			Status:             metav1.ConditionFalse,

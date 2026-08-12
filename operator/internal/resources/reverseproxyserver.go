@@ -1,6 +1,8 @@
 package resources
 
 import (
+	"strings"
+
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -60,13 +62,36 @@ func proxyEnv(rp *v1alpha1.ReverseProxyServer) []corev1.EnvVar {
 				SecretKeyRef: &corev1.SecretKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{Name: rp.Spec.APIKeySecretRef},
 					Key:                  "api-key",
-					Optional:             ptr(true),
 				},
 			},
 		})
 	}
+	protected := []string{"MINIKURA_API_KEY"}
+	if rp.Spec.BackendURL != "" {
+		apiURL := strings.TrimRight(rp.Spec.BackendURL, "/")
+		env = append(env,
+			corev1.EnvVar{Name: "MINIKURA_API_URL", Value: apiURL},
+			corev1.EnvVar{Name: "MINIKURA_WEBSOCKET_URL", Value: websocketURL(apiURL)},
+		)
+		protected = append(protected, "MINIKURA_API_URL", "MINIKURA_WEBSOCKET_URL")
+	}
+	if rp.Spec.Type == v1alpha1.ProxyVelocity && rp.Spec.PluginURL != "" {
+		env = append(env, corev1.EnvVar{Name: "PLUGINS", Value: rp.Spec.PluginURL})
+		protected = append(protected, "PLUGINS")
+	}
 
-	return UserEnv(env, rp.Spec.Env)
+	return UserEnv(env, rp.Spec.Env, protected...)
+}
+
+func websocketURL(apiURL string) string {
+	url := strings.TrimRight(apiURL, "/") + "/servers/ws"
+	if strings.HasPrefix(url, "https://") {
+		return "wss://" + strings.TrimPrefix(url, "https://")
+	}
+	if strings.HasPrefix(url, "http://") {
+		return "ws://" + strings.TrimPrefix(url, "http://")
+	}
+	return url
 }
 
 func ProxyDeployment(rp *v1alpha1.ReverseProxyServer) *appsv1.Deployment {

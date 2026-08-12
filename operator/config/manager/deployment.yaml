@@ -22,6 +22,7 @@ spec:
       containers:
         - name: operator
           image: minikura-operator:latest
+          imagePullPolicy: Always
           args:
             - --leader-elect
           env:

@@ -195,10 +195,28 @@ func TestMinecraftAPIKeyAndOptionalEnv(t *testing.T) {
 			if e.ValueFrom.SecretKeyRef.Name != "minikura-key" || e.ValueFrom.SecretKeyRef.Key != "api-key" {
 				t.Errorf("secret ref = %+v", e.ValueFrom.SecretKeyRef)
 			}
+			if e.ValueFrom.SecretKeyRef.Optional != nil {
+				t.Error("API key Secret must be required")
+			}
 		}
 	}
 	if !found {
 		t.Error("MINIKURA_API_KEY missing")
+	}
+}
+
+func TestMinecraftProtectedEnvCannotBeOverridden(t *testing.T) {
+	mc := testServer()
+	mc.Spec.APIKeySecretRef = "minikura-key"
+	mc.Spec.Env = []v1alpha1.EnvVar{{Name: "EULA", Value: "FALSE"}, {Name: "MINIKURA_API_KEY", Value: "inline"}}
+	env := minecraftEnv(mc)
+	if got, _ := envValue(env, "EULA"); got != "TRUE" {
+		t.Errorf("EULA = %q", got)
+	}
+	for _, item := range env {
+		if item.Name == "MINIKURA_API_KEY" && (item.ValueFrom == nil || item.ValueFrom.SecretKeyRef == nil) {
+			t.Error("API key secret reference was overridden")
+		}
 	}
 }
 

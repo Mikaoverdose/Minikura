@@ -45,6 +45,25 @@ func TestProxyReconcileCreatesResources(t *testing.T) {
 	}
 }
 
+func TestProxyReconcileRejectsInvalidSpec(t *testing.T) {
+	rp := testProxy("invalid", v1alpha1.ProxyVelocity)
+	rp.Spec.Type = ""
+	rp.Spec.ExternalPort = 0
+	rp.Spec.ListenPort = 0
+	c := newFakeClient(t, rp)
+	r := &ReverseProxyServerReconciler{Client: c, Scheme: testScheme(t)}
+
+	if _, err := r.Reconcile(context.Background(), requestFor(rp)); err == nil || !strings.Contains(err.Error(), "unsupported proxy type") {
+		t.Fatalf("reconcile error = %v, want invalid spec error", err)
+	}
+
+	var got v1alpha1.ReverseProxyServer
+	mustGet(t, c, client.ObjectKeyFromObject(rp), &got)
+	if got.Status.Phase != v1alpha1.PhaseFailed || got.Status.ObservedGeneration != rp.Generation {
+		t.Fatalf("status = %#v, want failed observed generation", got.Status)
+	}
+}
+
 func TestProxyReconcilePrunesStaleType(t *testing.T) {
 	rp := testProxy("edge", v1alpha1.ProxyVelocity)
 	c := newFakeClient(t, rp)
@@ -444,6 +463,46 @@ func TestProxyStatusReadyAndEndpoint(t *testing.T) {
 	}
 	if got.Status.Endpoint != "9.9.9.9:25565" {
 		t.Errorf("endpoint = %q", got.Status.Endpoint)
+	}
+}
+
+func TestProxyReconcileMutatesServiceAndDeployment(t *testing.T) {
+	rp := testProxy("mutable", v1alpha1.ProxyVelocity)
+	c := newFakeClient(t, rp)
+	r := &ReverseProxyServerReconciler{Client: c, Scheme: testScheme(t)}
+	if _, err := r.Reconcile(context.Background(), requestFor(rp)); err != nil {
+		t.Fatalf("first reconcile: %v", err)
+	}
+
+	var current v1alpha1.ReverseProxyServer
+	mustGet(t, c, client.ObjectKeyFromObject(rp), &current)
+	current.Spec.ExternalPort = 25570
+	current.Spec.BackendURL = "http://backend:3000/api"
+	current.Spec.APIKeySecretRef = "proxy-key"
+	current.Generation = 2
+	if err := c.Update(context.Background(), &current); err != nil {
+		t.Fatalf("update proxy: %v", err)
+	}
+	if _, err := r.Reconcile(context.Background(), requestFor(&current)); err != nil {
+		t.Fatalf("second reconcile: %v", err)
+	}
+
+	key := client.ObjectKey{Name: resources.ProxyName(rp.Spec.Type, rp.Name), Namespace: rp.Namespace}
+	var svc corev1.Service
+	mustGet(t, c, key, &svc)
+	if svc.Spec.Ports[0].Port != 25570 {
+		t.Errorf("service port = %d", svc.Spec.Ports[0].Port)
+	}
+	var dep appsv1.Deployment
+	mustGet(t, c, key, &dep)
+	found := false
+	for _, env := range dep.Spec.Template.Spec.Containers[0].Env {
+		if env.Name == "MINIKURA_API_URL" && env.Value == "http://backend:3000/api" {
+			found = true
+		}
+	}
+	if !found {
+		t.Error("deployment was not updated with backend URL")
 	}
 }
 

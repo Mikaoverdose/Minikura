@@ -1,5 +1,7 @@
 package v1alpha1
 
+import corev1 "k8s.io/api/core/v1"
+
 const (
 	Domain      = "minikura.kirameki.cafe"
 	LabelPrefix = Domain
@@ -18,11 +20,15 @@ const (
 	ConditionReady = "Ready"
 )
 
+// +kubebuilder:validation:XValidation:rule="!(has(self.value) && has(self.valueFrom))",message="value and valueFrom are mutually exclusive"
 type EnvVar struct {
 	Name string `json:"name"`
 
 	// +optional
 	Value string `json:"value,omitempty"`
+
+	// +optional
+	ValueFrom *corev1.EnvVarSource `json:"valueFrom,omitempty"`
 }
 
 // +kubebuilder:validation:Enum=ClusterIP;NodePort;LoadBalancer

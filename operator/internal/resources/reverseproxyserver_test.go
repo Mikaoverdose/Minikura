@@ -105,9 +105,58 @@ func TestProxyAPIKeyEnv(t *testing.T) {
 			if e.ValueFrom == nil || e.ValueFrom.SecretKeyRef.Name != "proxy-key" {
 				t.Errorf("secret ref = %+v", e.ValueFrom)
 			}
+			if e.ValueFrom.SecretKeyRef.Optional != nil {
+				t.Error("API key Secret must be required")
+			}
 		}
 	}
 	if !found {
 		t.Error("MINIKURA_API_KEY missing")
+	}
+}
+
+func TestProxyPluginBackendWiring(t *testing.T) {
+	rp := testProxy()
+	rp.Spec.APIKeySecretRef = "proxy-key"
+	rp.Spec.BackendURL = "https://backend.example.com/api/"
+	rp.Spec.PluginURL = "https://downloads.example.com/minikura.jar"
+	rp.Spec.Env = []v1alpha1.EnvVar{
+		{Name: "MINIKURA_API_URL", Value: "http://attacker"},
+		{Name: "PLUGINS", Value: "http://attacker/plugin.jar"},
+	}
+	env := proxyEnv(rp)
+	want := map[string]string{
+		"MINIKURA_API_URL":       "https://backend.example.com/api",
+		"MINIKURA_WEBSOCKET_URL": "wss://backend.example.com/api/servers/ws",
+		"PLUGINS":                "https://downloads.example.com/minikura.jar",
+	}
+	for name, value := range want {
+		if got, ok := envValue(env, name); !ok || got != value {
+			t.Errorf("%s = %q, %v; want %q", name, got, ok, value)
+		}
+	}
+}
+
+func TestBungeeCordDoesNotInstallVelocityPlugin(t *testing.T) {
+	rp := testProxy()
+	rp.Spec.Type = v1alpha1.ProxyBungeeCord
+	rp.Spec.PluginURL = "https://downloads.example.com/minikura.jar"
+	if _, ok := envValue(proxyEnv(rp), "PLUGINS"); ok {
+		t.Error("Velocity plugin must not be installed on BungeeCord")
+	}
+}
+
+func TestProxyLegacyEnvWiringRemainsAvailableWhenFieldsAreUnset(t *testing.T) {
+	rp := testProxy()
+	rp.Spec.Env = []v1alpha1.EnvVar{
+		{Name: "MINIKURA_API_URL", Value: "http://legacy-backend/api"},
+		{Name: "PLUGINS", Value: "http://legacy/plugin.jar"},
+	}
+	env := proxyEnv(rp)
+	if got, _ := envValue(env, "MINIKURA_API_URL"); got != "http://legacy-backend/api" {
+		t.Errorf("legacy API URL = %q", got)
+	}
+	if got, _ := envValue(env, "PLUGINS"); got != "http://legacy/plugin.jar" {
+		t.Errorf("legacy plugin URL = %q", got)
 	}
 }

@@ -11,6 +11,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 
 	v1alpha1 "github.com/YuzuZensai/Minikura/operator/api/v1alpha1"
+	"github.com/YuzuZensai/Minikura/operator/internal/resources"
 )
 
 func TestTypedObjectMarshalsWithoutTypeMeta(t *testing.T) {
@@ -30,6 +31,27 @@ func TestTypedObjectMarshalsWithoutTypeMeta(t *testing.T) {
 	}
 	if _, ok := m["kind"]; ok {
 		t.Fatal("precondition changed: typed objects now carry kind")
+	}
+}
+
+func TestApplyPreservesServiceAllocations(t *testing.T) {
+	owner := testMinecraft("smp", v1alpha1.ServerStateless)
+	current := resources.MinecraftService(owner)
+	current.Spec.ClusterIP = "10.0.0.10"
+	current.Spec.ClusterIPs = []string{"10.0.0.10"}
+	current.Spec.IPFamilies = []corev1.IPFamily{corev1.IPv4Protocol}
+	policy := corev1.IPFamilyPolicySingleStack
+	current.Spec.IPFamilyPolicy = &policy
+	c := newFakeClient(t, owner, current)
+
+	desired := resources.MinecraftService(owner)
+	if err := apply(context.Background(), c, owner, desired, testScheme(t)); err != nil {
+		t.Fatalf("apply: %v", err)
+	}
+	var got corev1.Service
+	mustGet(t, c, client.ObjectKeyFromObject(current), &got)
+	if got.Spec.ClusterIP != "10.0.0.10" || len(got.Spec.ClusterIPs) != 1 {
+		t.Errorf("service allocations were not preserved: %+v", got.Spec)
 	}
 }
 

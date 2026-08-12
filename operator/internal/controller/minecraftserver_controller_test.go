@@ -54,6 +54,24 @@ func TestMinecraftReconcileStatelessCreatesResources(t *testing.T) {
 	}
 }
 
+func TestMinecraftReconcileRejectsInvalidSpec(t *testing.T) {
+	mc := testMinecraft("invalid", v1alpha1.ServerStateless)
+	mc.Spec.Type = ""
+	mc.Spec.ListenPort = 0
+	c := newFakeClient(t, mc)
+	r := &MinecraftServerReconciler{Client: c, Scheme: testScheme(t)}
+
+	if _, err := r.Reconcile(context.Background(), requestFor(mc)); err == nil || !strings.Contains(err.Error(), "unsupported server type") {
+		t.Fatalf("reconcile error = %v, want invalid spec error", err)
+	}
+
+	var got v1alpha1.MinecraftServer
+	mustGet(t, c, client.ObjectKeyFromObject(mc), &got)
+	if got.Status.Phase != v1alpha1.PhaseFailed || got.Status.ObservedGeneration != mc.Generation {
+		t.Fatalf("status = %#v, want failed observed generation", got.Status)
+	}
+}
+
 func TestMinecraftReconcileStatefulCreatesStatefulSet(t *testing.T) {
 	mc := testMinecraft("smp", v1alpha1.ServerStateful)
 	c := newFakeClient(t, mc)
@@ -156,6 +174,9 @@ func TestMinecraftReconcileInvalidStorageFails(t *testing.T) {
 	if got.Status.Message == "" {
 		t.Error("expected a failure message")
 	}
+	if got.Status.ObservedGeneration != mc.Generation {
+		t.Errorf("observedGeneration = %d, want %d", got.Status.ObservedGeneration, mc.Generation)
+	}
 }
 
 func TestMinecraftPruneSkipsUnownedWorkload(t *testing.T) {
@@ -212,6 +233,39 @@ func TestMinecraftStatusUsesReadyReplicas(t *testing.T) {
 	}
 }
 
+func TestMinecraftReconcileMutatesServiceAndWorkload(t *testing.T) {
+	mc := testMinecraft("mutable", v1alpha1.ServerStateless)
+	c := newFakeClient(t, mc)
+	r := &MinecraftServerReconciler{Client: c, Scheme: testScheme(t)}
+	if _, err := r.Reconcile(context.Background(), requestFor(mc)); err != nil {
+		t.Fatalf("first reconcile: %v", err)
+	}
+
+	var current v1alpha1.MinecraftServer
+	mustGet(t, c, client.ObjectKeyFromObject(mc), &current)
+	current.Spec.ListenPort = 25566
+	current.Spec.Resources.MemoryLimitMB = 4096
+	current.Generation = 2
+	if err := c.Update(context.Background(), &current); err != nil {
+		t.Fatalf("update server: %v", err)
+	}
+	if _, err := r.Reconcile(context.Background(), requestFor(&current)); err != nil {
+		t.Fatalf("second reconcile: %v", err)
+	}
+
+	key := client.ObjectKey{Name: resources.ServerName(mc.Name), Namespace: mc.Namespace}
+	var svc corev1.Service
+	mustGet(t, c, key, &svc)
+	if svc.Spec.Ports[0].Port != 25566 {
+		t.Errorf("service port = %d", svc.Spec.Ports[0].Port)
+	}
+	var dep appsv1.Deployment
+	mustGet(t, c, key, &dep)
+	if got := dep.Spec.Template.Spec.Containers[0].Resources.Limits.Memory().String(); got != "4Gi" {
+		t.Errorf("memory limit = %q", got)
+	}
+}
+
 func TestMinecraftReconcileApplyFailure(t *testing.T) {
 	mc := testMinecraft("lobby", v1alpha1.ServerStateless)
 	c := newInterceptedClient(t, interceptor.Funcs{
@@ -254,7 +308,7 @@ func TestMinecraftReconcileServiceFailure(t *testing.T) {
 	}
 }
 
-func TestMinecraftReconcileContinuesAfterPruneError(t *testing.T) {
+func TestMinecraftReconcileReportsPruneError(t *testing.T) {
 	mc := testMinecraft("lobby", v1alpha1.ServerStateless)
 	c := newInterceptedClient(t, interceptor.Funcs{
 		Get: func(ctx context.Context, c client.WithWatch, key client.ObjectKey, obj client.Object, opts ...client.GetOption) error {
@@ -265,8 +319,8 @@ func TestMinecraftReconcileContinuesAfterPruneError(t *testing.T) {
 		},
 	}, mc)
 	r := &MinecraftServerReconciler{Client: c, Scheme: testScheme(t)}
-	if _, err := r.Reconcile(context.Background(), requestFor(mc)); err != nil {
-		t.Fatalf("prune errors should not fail reconcile: %v", err)
+	if _, err := r.Reconcile(context.Background(), requestFor(mc)); err == nil {
+		t.Fatal("expected prune failure")
 	}
 }
 

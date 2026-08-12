@@ -1,6 +1,7 @@
 package resources
 
 import (
+	"strings"
 	"testing"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -20,6 +21,36 @@ func TestServerAndProxyNames(t *testing.T) {
 	}
 	if got := ConfigMapName("minecraft-smp"); got != "minecraft-smp-config" {
 		t.Errorf("ConfigMapName = %q", got)
+	}
+}
+
+func TestGeneratedNamesFitDNSLabelsAndRemainDistinct(t *testing.T) {
+	name := strings.Repeat("a", 63)
+	server := ServerName(name)
+	config := ConfigMapName(server)
+	proxy := ProxyName(v1alpha1.ProxyBungeeCord, name)
+	for kind, got := range map[string]string{"server": server, "config": config, "proxy": proxy} {
+		if len(got) > 63 {
+			t.Errorf("%s name length = %d: %q", kind, len(got), got)
+		}
+		if strings.HasSuffix(got, "-") {
+			t.Errorf("%s name has invalid suffix: %q", kind, got)
+		}
+	}
+	if ServerName(name) == ServerName(strings.Repeat("a", 62)+"b") {
+		t.Error("different long names collided")
+	}
+}
+
+func TestLongResourceNamesProduceValidLabelValues(t *testing.T) {
+	name := strings.Repeat("a", 63)
+	mc := &v1alpha1.MinecraftServer{ObjectMeta: metav1.ObjectMeta{Name: name}}
+	if got := ServerLabels(mc)[v1alpha1.LabelServerID]; len(got) > 63 {
+		t.Errorf("server-id label length = %d", len(got))
+	}
+	rp := &v1alpha1.ReverseProxyServer{ObjectMeta: metav1.ObjectMeta{Name: name}}
+	if got := ProxyLabels(rp)[v1alpha1.LabelProxyID]; len(got) > 63 {
+		t.Errorf("proxy-id label length = %d", len(got))
 	}
 }
 

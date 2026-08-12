@@ -44,7 +44,7 @@ docker-build:
 	docker build -t $(IMG) .
 
 .PHONY: install-crds
-install-crds: manifests
+install-crds:
 	kubectl apply -f config/crd
 
 .PHONY: uninstall-crds
@@ -52,12 +52,5 @@ uninstall-crds:
 	kubectl delete --ignore-not-found -f config/crd
 
 .PHONY: deploy
-deploy: manifests
-	kubectl create namespace $(NAMESPACE) --dry-run=client -o yaml | kubectl apply -f -
-	kubectl apply -f config/crd
-	kubectl apply -f config/rbac/role.yaml
-	kubectl apply -n $(NAMESPACE) -f config/rbac/service_account.yaml
-	kubectl apply -n $(NAMESPACE) -f config/rbac/backend.yaml
-	kubectl patch clusterrolebinding minikura-operator-rolebinding --type=json -p='[{"op":"replace","path":"/subjects/0/namespace","value":"$(NAMESPACE)"}]'
-	kubectl patch clusterrolebinding minikura-backend-operator-resources --type=json -p='[{"op":"replace","path":"/subjects/0/namespace","value":"$(NAMESPACE)"}]'
-	sed 's|minikura-operator:latest|$(IMG)|' config/manager/deployment.yaml | kubectl apply -n $(NAMESPACE) -f -
+deploy:
+	KUBERNETES_NAMESPACE="$(NAMESPACE)" OPERATOR_IMAGE="$(IMG)" bash ../scripts/install.sh

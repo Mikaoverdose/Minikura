@@ -26,6 +26,7 @@
     "operator:test": "make -C operator test",
     "operator:crds": "make -C operator install-crds",
     "operator:deploy": "make -C operator deploy",
+    "operator:validate": "bash -n scripts/install.sh && kubectl create --dry-run=client --validate=false -f operator/config/crd -f operator/config/rbac/role.yaml -f operator/config/rbac/service_account.yaml -f operator/config/rbac/backend.yaml -f operator/config/manager/deployment.yaml -o name >/dev/null",
     "setup": "bash scripts/install.sh"
   },
   "devDependencies": {

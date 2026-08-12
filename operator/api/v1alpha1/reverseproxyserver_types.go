@@ -46,8 +46,17 @@ type ReverseProxyServerSpec struct {
 	// +optional
 	Env []EnvVar `json:"env,omitempty"`
 
+	APIKeySecretRef string `json:"apiKeySecretRef"`
+
+	// BackendURL is the base URL used by the Minikura proxy plugin, including
+	// the API path (for example, http://minikura-backend:3000/api).
 	// +optional
-	APIKeySecretRef string `json:"apiKeySecretRef,omitempty"`
+	BackendURL string `json:"backendURL,omitempty"`
+
+	// PluginURL is a comma-separated list of download URLs understood by the
+	// proxy image's PLUGINS installer. It must include plugin dependencies.
+	// +optional
+	PluginURL string `json:"pluginURL,omitempty"`
 
 	// +optional
 	BackendSelector *metav1.LabelSelector `json:"backendSelector,omitempty"`

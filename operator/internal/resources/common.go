@@ -96,19 +96,32 @@ func JVMEnv(jvm v1alpha1.JVMOptions, limitMB int32) []corev1.EnvVar {
 	return env
 }
 
-func UserEnv(base []corev1.EnvVar, extra []v1alpha1.EnvVar) []corev1.EnvVar {
+func UserEnv(base []corev1.EnvVar, extra []v1alpha1.EnvVar, protected ...string) []corev1.EnvVar {
 	index := make(map[string]int, len(base))
+	reserved := make(map[string]struct{}, len(protected))
+	for _, name := range protected {
+		reserved[name] = struct{}{}
+	}
 	for i, env := range base {
 		index[env.Name] = i
 	}
 	for _, e := range extra {
+		if _, ok := reserved[e.Name]; ok {
+			continue
+		}
+		var valueFrom *corev1.EnvVarSource
+		value := e.Value
+		if e.ValueFrom != nil {
+			valueFrom = e.ValueFrom.DeepCopy()
+			value = ""
+		}
 		if i, ok := index[e.Name]; ok {
-			base[i].Value = e.Value
-			base[i].ValueFrom = nil
+			base[i].Value = value
+			base[i].ValueFrom = valueFrom
 			continue
 		}
 		index[e.Name] = len(base)
-		base = append(base, corev1.EnvVar{Name: e.Name, Value: e.Value})
+		base = append(base, corev1.EnvVar{Name: e.Name, Value: value, ValueFrom: valueFrom})
 	}
 	return base
 }

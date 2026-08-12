@@ -4,40 +4,68 @@ metadata:
   name: minikura-backend
 ---
 apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
+kind: Role
 metadata:
   name: minikura-backend-operator-resources
 rules:
   - apiGroups: [""]
     resources: ["secrets"]
-    verbs: ["get", "list", "create", "update", "delete"]
+    verbs: ["get", "create", "update", "delete"]
   - apiGroups: [""]
-    resources: ["pods", "services", "configmaps", "nodes"]
+    resources: ["pods", "services", "configmaps"]
     verbs: ["get", "list", "watch"]
   - apiGroups: [""]
     resources: ["pods/log"]
-    verbs: ["get", "list"]
+    verbs: ["get"]
   - apiGroups: [""]
-    resources: ["pods/exec"]
+    resources: ["pods/attach", "pods/exec"]
     verbs: ["get", "create"]
   - apiGroups: ["apps"]
     resources: ["deployments", "statefulsets"]
     verbs: ["get", "list", "watch"]
   - apiGroups: ["metrics.k8s.io"]
-    resources: ["pods", "nodes"]
+    resources: ["pods"]
     verbs: ["get", "list"]
+  - apiGroups: ["networking.k8s.io"]
+    resources: ["ingresses"]
+    verbs: ["get", "list", "watch"]
   - apiGroups: ["minikura.kirameki.cafe"]
     resources: ["minecraftservers", "reverseproxyservers"]
     verbs: ["get", "list", "watch", "create", "update", "delete"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
+kind: RoleBinding
 metadata:
   name: minikura-backend-operator-resources
 roleRef:
   apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
+  kind: Role
   name: minikura-backend-operator-resources
+subjects:
+  - kind: ServiceAccount
+    name: minikura-backend
+    namespace: minikura
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: minikura-backend-cluster-observer
+rules:
+  - apiGroups: [""]
+    resources: ["nodes"]
+    verbs: ["get", "list"]
+  - apiGroups: ["metrics.k8s.io"]
+    resources: ["nodes"]
+    verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: minikura-backend-cluster-observer
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: minikura-backend-cluster-observer
 subjects:
   - kind: ServiceAccount
     name: minikura-backend

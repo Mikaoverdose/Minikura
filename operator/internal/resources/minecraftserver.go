@@ -84,13 +84,12 @@ func minecraftEnv(mc *v1alpha1.MinecraftServer) []corev1.EnvVar {
 				SecretKeyRef: &corev1.SecretKeySelector{
 					LocalObjectReference: corev1.LocalObjectReference{Name: mc.Spec.APIKeySecretRef},
 					Key:                  "api-key",
-					Optional:             ptr(true),
 				},
 			},
 		})
 	}
 
-	return UserEnv(env, mc.Spec.Env)
+	return UserEnv(env, mc.Spec.Env, "EULA", "MINIKURA_API_KEY")
 }
 
 func minecraftPodSpec(mc *v1alpha1.MinecraftServer, stateful bool) corev1.PodSpec {

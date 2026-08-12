@@ -5,6 +5,20 @@ Minikura is designed to simplify the management and deployment of Minecraft serv
 
 🚧 **Note:** Minikura is in heavy development and very incomplete. Its scope, features, and roadmap are subject to change as the project evolves.
 
+## Kubernetes Operator
+
+Install the checked-in CRDs, least-privilege RBAC, service accounts, and operator Deployment into the current Kubernetes context:
+
+```sh
+OPERATOR_IMAGE=registry.example.com/minikura-operator:tag bun run setup
+```
+
+`OPERATOR_IMAGE` defaults to `minikura-operator:latest` for clusters where that image is already available. Set `KUBERNETES_NAMESPACE` to install outside `minikura` and `ROLLOUT_TIMEOUT` to change the default `120s` readiness timeout. An in-cluster backend Deployment must use the `minikura-backend` service account in the same namespace.
+
+Operator-managed proxy pods use `MINIKURA_OPERATOR_BACKEND_URL` to reach the backend, defaulting to `http://minikura-backend:3000/api`. Set `MINIKURA_VELOCITY_PLUGIN_URL` to comma-separated RedisBungee and shaded Minikura Velocity plugin JAR URLs to install both required plugins in Velocity pods.
+
+Run `bun run operator:validate` for shell syntax and client-side Kubernetes manifest validation without connecting to a cluster.
+
 ---
 
 ## 🚀 Planned Feature Set

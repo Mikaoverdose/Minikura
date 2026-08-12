@@ -1,9 +1,19 @@
-#!/bin/bash
-set -e
+#!/usr/bin/env bash
+set -euo pipefail
 
 NAMESPACE="${KUBERNETES_NAMESPACE:-minikura}"
+OPERATOR_IMAGE="${OPERATOR_IMAGE:-minikura-operator:latest}"
+ROLLOUT_TIMEOUT="${ROLLOUT_TIMEOUT:-120s}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+case "$NAMESPACE" in
+    ''|*[!a-z0-9-]*|-*|*-) echo "[ERROR] KUBERNETES_NAMESPACE must be a DNS label" >&2; exit 1 ;;
+esac
+if (( ${#NAMESPACE} > 63 )); then
+    echo "[ERROR] KUBERNETES_NAMESPACE must not exceed 63 characters" >&2
+    exit 1
+fi
 
 echo "╔════════════════════════════════════════════════╗"
 echo "║       Minikura Kubernetes Installer            ║"
@@ -12,15 +22,13 @@ echo ""
 
 echo "-> Checking prerequisites..."
 if ! command -v kubectl &> /dev/null; then
-    echo "[WARN] kubectl not found. Skipping k8s setup."
-    echo "[INFO] Install kubectl and run 'bash scripts/install.sh' manually when ready."
-    exit 0
+    echo "[ERROR] kubectl is required" >&2
+    exit 1
 fi
 
 if ! kubectl cluster-info &> /dev/null; then
-    echo "[WARN] Cannot connect to Kubernetes cluster. Skipping k8s setup."
-    echo "[INFO] Run 'bash scripts/install.sh' manually when cluster is ready."
-    exit 0
+    echo "[ERROR] Cannot connect to the current Kubernetes cluster" >&2
+    exit 1
 fi
 
 echo "[OK] kubectl found"
@@ -28,23 +36,33 @@ echo "[OK] Connected to Kubernetes cluster"
 echo ""
 
 echo "-> Creating namespace: $NAMESPACE"
-kubectl create namespace $NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
+kubectl create namespace "$NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
 echo ""
 
 echo "-> Installing operator CRDs"
-make -C "$PROJECT_ROOT/operator" install-crds
+kubectl apply -f "$PROJECT_ROOT/operator/config/crd"
 echo "[OK] CRDs installed"
 echo ""
 
-echo "-> Setting up Go operator RBAC"
+echo "-> Configuring operator and backend RBAC"
+# Remove bindings created by older releases before replacing them with namespaced access.
+kubectl delete clusterrolebinding minikura-operator-rolebinding \
+    minikura-backend-operator-resources --ignore-not-found
+kubectl delete clusterrole minikura-backend-operator-resources --ignore-not-found
 kubectl apply -f "$PROJECT_ROOT/operator/config/rbac/role.yaml"
-kubectl apply -n "$NAMESPACE" -f "$PROJECT_ROOT/operator/config/rbac/service_account.yaml"
-kubectl apply -n "$NAMESPACE" -f "$PROJECT_ROOT/operator/config/rbac/backend.yaml"
-kubectl patch clusterrolebinding minikura-operator-rolebinding --type=json \
-    -p="[{\"op\":\"replace\",\"path\":\"/subjects/0/namespace\",\"value\":\"$NAMESPACE\"}]"
-kubectl patch clusterrolebinding minikura-backend-operator-resources --type=json \
-    -p="[{\"op\":\"replace\",\"path\":\"/subjects/0/namespace\",\"value\":\"$NAMESPACE\"}]"
-echo "[OK] Operator RBAC configured"
+sed "s/namespace: minikura/namespace: $NAMESPACE/g" \
+    "$PROJECT_ROOT/operator/config/rbac/service_account.yaml" | kubectl apply -n "$NAMESPACE" -f -
+sed "s/namespace: minikura/namespace: $NAMESPACE/g" \
+    "$PROJECT_ROOT/operator/config/rbac/backend.yaml" | kubectl apply -n "$NAMESPACE" -f -
+echo "[OK] RBAC configured"
+echo ""
+
+echo "-> Deploying operator: $OPERATOR_IMAGE"
+kubectl set image -f "$PROJECT_ROOT/operator/config/manager/deployment.yaml" \
+    operator="$OPERATOR_IMAGE" --local -o yaml | kubectl apply -n "$NAMESPACE" -f -
+kubectl rollout restart -n "$NAMESPACE" deployment/minikura-operator
+kubectl rollout status -n "$NAMESPACE" deployment/minikura-operator --timeout="$ROLLOUT_TIMEOUT"
+echo "[OK] Operator deployed"
 echo ""
 
 echo "╔════════════════════════════════════════════════╗"
@@ -54,8 +72,9 @@ echo ""
 echo "Resources created:"
 echo "  [OK] Namespace: $NAMESPACE"
 echo "  [OK] ServiceAccount: minikura-operator"
-echo "  [OK] ClusterRole + ClusterRoleBinding"
+echo "  [OK] ServiceAccount: minikura-backend"
+echo "  [OK] Operator Deployment: $OPERATOR_IMAGE"
 echo ""
 echo "Next steps:"
-echo "  bun run dev - Start backend, web, and Go operator"
+echo "  Configure an in-cluster backend Deployment to use serviceAccountName: minikura-backend"
 echo ""
