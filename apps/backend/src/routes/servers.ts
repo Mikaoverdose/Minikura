@@ -1,19 +1,21 @@
 import { Elysia } from "elysia";
-import { z } from "zod";
 import { serverService, wsService } from "../application/di-container";
+import { findApiKeyOwner } from "../middleware/api-key";
 import { requireAuth } from "../middleware/auth-guards";
-import { createServerSchema, updateServerSchema } from "../schemas/server.schema";
+import {
+  createServerSchema,
+  envVariableSchema,
+  updateServerSchema,
+} from "../schemas/server.schema";
 import type { WebSocketClient } from "../services/websocket";
-
-const envVariableSchema = z.object({
-  key: z.string(),
-  value: z.string(),
-});
 
 export const serverRoutes = new Elysia({ prefix: "/servers" })
   .ws("/ws", {
-    open(ws: WebSocketClient & { data?: { query?: Record<string, string> }; close: () => void }) {
-      if (!ws.data?.query?.apiKey) {
+    async open(
+      ws: WebSocketClient & { data?: { query?: Record<string, string> }; close: () => void }
+    ) {
+      const owner = await findApiKeyOwner(ws.data?.query?.apiKey ?? "");
+      if (!owner) {
         ws.close();
         return;
       }

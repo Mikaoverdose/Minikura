@@ -1,6 +1,6 @@
 "use client";
 
-import type { ConnectionInfo, K8sNodeSummary, PodInfo } from "@minikura/api";
+import type { ConnectionInfo, CustomResourceSummary, K8sNodeSummary, PodInfo } from "@minikura/api";
 import { useCallback, useEffect, useState } from "react";
 import { api } from "@/lib/api-client";
 import { getReverseProxyApi } from "@/lib/api-helpers";
@@ -119,6 +119,20 @@ export function useTopologyData() {
           nodeMetrics = nodeMetricsRes.data || { items: [] };
         } catch (_err) {}
 
+        const proxyBackends = new Map<string, string[]>();
+        try {
+          const crResponse = await api.api.k8s["reverse-proxy-servers"].get();
+          for (const cr of (crResponse.data as CustomResourceSummary[]) || []) {
+            const backends = cr.status?.backends;
+            if (cr.name && Array.isArray(backends)) {
+              proxyBackends.set(
+                cr.name,
+                backends.filter((id): id is string => typeof id === "string")
+              );
+            }
+          }
+        } catch (_err) {}
+
         const topologyGraph = buildTopologyGraph({
           servers: normalServers,
           proxies: reverseProxies,
@@ -127,6 +141,7 @@ export function useTopologyData() {
           k8sNodes,
           serverConnections: serverConnectionMap,
           proxyConnections: proxyConnectionMap,
+          proxyBackends,
           podMetrics,
           nodeMetrics,
         });

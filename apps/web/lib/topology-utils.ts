@@ -59,15 +59,22 @@ interface BuildEnhancedGraphInput {
   k8sNodes: K8sNodeSummary[];
   serverConnections?: Map<string, ConnectionInfo | null>;
   proxyConnections?: Map<string, ConnectionInfo | null>;
+  proxyBackends?: Map<string, string[]>;
   podMetrics?: any;
   nodeMetrics?: any;
 }
 
 function parseProxyServerConnections(
-  _proxy: ReverseProxyServer,
-  allServers: NormalServer[]
+  proxy: ReverseProxyServer,
+  allServers: NormalServer[],
+  backendsByProxyId?: Map<string, string[]>
 ): string[] {
-  return allServers.map((s) => s.id);
+  const backends = backendsByProxyId?.get(proxy.id);
+  if (!backends) {
+    return allServers.map((s) => s.id);
+  }
+  const known = new Set(allServers.map((s) => s.id));
+  return backends.filter((id) => known.has(id));
 }
 
 export function buildTopologyGraph(input: BuildEnhancedGraphInput): TopologyGraph {
@@ -79,6 +86,7 @@ export function buildTopologyGraph(input: BuildEnhancedGraphInput): TopologyGrap
     k8sNodes,
     serverConnections,
     proxyConnections,
+    proxyBackends,
     podMetrics,
     nodeMetrics,
   } = input;
@@ -103,7 +111,7 @@ export function buildTopologyGraph(input: BuildEnhancedGraphInput): TopologyGrap
   }
 
   for (const proxy of proxies) {
-    const connectedServerIds = parseProxyServerConnections(proxy, servers);
+    const connectedServerIds = parseProxyServerConnections(proxy, servers, proxyBackends);
     proxyToServers.set(proxy.id, connectedServerIds);
 
     for (const serverId of connectedServerIds) {

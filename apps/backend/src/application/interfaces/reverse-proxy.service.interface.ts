@@ -13,4 +13,5 @@ export interface IReverseProxyService {
   setEnvVariable(proxyId: string, key: string, value: string): Promise<void>;
   getEnvVariables(proxyId: string): Promise<EnvVariable[]>;
   deleteEnvVariable(proxyId: string, key: string): Promise<void>;
+  getConnectionInfo(proxyId: string): Promise<unknown>;
 }

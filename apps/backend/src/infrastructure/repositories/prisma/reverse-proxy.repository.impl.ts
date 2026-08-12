@@ -64,12 +64,12 @@ export class PrismaReverseProxyRepository implements ReverseProxyRepository {
         description: input.description ?? null,
         external_address: input.external_address,
         external_port: input.external_port,
-        listen_port: input.listen_port ?? 25577,
+        listen_port: input.listen_port ?? 25565,
         service_type: input.service_type ?? "LOAD_BALANCER",
         node_port: input.node_port ?? null,
         memory: input.memory ?? 512,
-        cpu_request: input.cpu_request ?? "100m",
-        cpu_limit: input.cpu_limit ?? "200m",
+        cpu_request: input.cpu_request ?? "250m",
+        cpu_limit: input.cpu_limit ?? "500m",
         api_key: token,
         env_variables: input.env_variables
           ? {

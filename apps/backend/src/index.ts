@@ -10,6 +10,7 @@ import { authPlugin } from "./middleware/auth-plugin";
 import { errorHandler } from "./middleware/error-handler";
 import { bootstrapRoutes } from "./routes/bootstrap";
 import { k8sRoutes } from "./routes/k8s";
+import { pluginRoutes } from "./routes/plugin";
 import { reverseProxyRoutes } from "./routes/reverse-proxy";
 import { serverRoutes } from "./routes/servers";
 import { terminalRoutes } from "./routes/terminal";
@@ -34,7 +35,13 @@ const app = new Elysia({ adapter: node() })
   .use(bootstrapRoutes)
   .use(authPlugin)
   .group("/api", (app) =>
-    app.use(userRoutes).use(serverRoutes).use(reverseProxyRoutes).use(k8sRoutes).use(terminalRoutes)
+    app
+      .use(userRoutes)
+      .use(serverRoutes)
+      .use(reverseProxyRoutes)
+      .use(pluginRoutes)
+      .use(k8sRoutes)
+      .use(terminalRoutes)
   );
 
 export type App = typeof app;

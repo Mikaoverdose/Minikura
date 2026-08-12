@@ -12,18 +12,18 @@ eventBus.subscribe(ReverseProxyCreatedEvent, async (event) => {
     { proxyId: event.proxyId, proxyType: event.proxyType },
     "Reverse proxy created event"
   );
-  wsService.broadcast("create", event.proxyType, event.proxyId);
+  wsService.broadcast("CREATE", event.proxyType, event.proxyId);
   await operatorResourceSync.syncReverseProxyById(event.proxyId);
 });
 
 eventBus.subscribe(ReverseProxyUpdatedEvent, async (event) => {
   logger.info({ proxyId: event.proxyId }, "Reverse proxy updated event");
-  wsService.broadcast("update", "reverse-proxy", event.proxyId);
+  wsService.broadcast("UPDATE", "reverse-proxy", event.proxyId);
   await operatorResourceSync.syncReverseProxyById(event.proxyId);
 });
 
 eventBus.subscribe(ReverseProxyDeletedEvent, async (event) => {
   logger.info({ proxyId: event.proxyId }, "Reverse proxy deleted event");
-  wsService.broadcast("delete", "reverse-proxy", event.proxyId);
+  wsService.broadcast("DELETE", "reverse-proxy", event.proxyId);
   await operatorResourceSync.deleteReverseProxy(event.proxyId);
 });

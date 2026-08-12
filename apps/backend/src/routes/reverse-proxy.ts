@@ -1,13 +1,11 @@
 import { Elysia } from "elysia";
-import { z } from "zod";
 import { reverseProxyService } from "../application/di-container";
 import { requireAuth } from "../middleware/auth-guards";
-import { createReverseProxySchema, updateReverseProxySchema } from "../schemas/server.schema";
-
-const envVariableSchema = z.object({
-  key: z.string(),
-  value: z.string(),
-});
+import {
+  createReverseProxySchema,
+  envVariableSchema,
+  updateReverseProxySchema,
+} from "../schemas/server.schema";
 
 export const reverseProxyRoutes = new Elysia({ prefix: "/reverse-proxy" })
   .use(requireAuth)
@@ -17,6 +15,10 @@ export const reverseProxyRoutes = new Elysia({ prefix: "/reverse-proxy" })
 
   .get("/:id", async ({ params }) => {
     return await reverseProxyService.getReverseProxyById(params.id, false);
+  })
+
+  .get("/:id/connection-info", async ({ params }) => {
+    return await reverseProxyService.getConnectionInfo(params.id);
   })
 
   .post("/", async ({ body }) => {

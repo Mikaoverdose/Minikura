@@ -30,14 +30,7 @@ class MinikuraWebSocketClient(private val plugin: Main, private val logger: Logg
                     "test" -> {
                         logger.info("API Call detected: endpoint=$endpoint, timestamp=$timestamp")
                         
-                        when (endpoint) {
-                            "/servers" -> {
-                                logger.info("dawdawdawdawd")
-                            }
-                            else -> {
-                                logger.info("API endpoint $endpoint was accessed")
-                            }
-                        }
+                        logger.info("API endpoint $endpoint was accessed")
                     }
                     "SERVER_CHANGE" -> {
                         val action = jsonObject.get("action")?.asString
@@ -46,7 +39,7 @@ class MinikuraWebSocketClient(private val plugin: Main, private val logger: Logg
                         
                         logger.info("Server change detected: action=$action, serverType=$serverType, serverId=$serverId")
                         
-                        when (action) {
+                        when (action?.uppercase()) {
                             "CREATE" -> {
                                 logger.info("Server '$serverId' was created")
                                 executeRefreshCommand()

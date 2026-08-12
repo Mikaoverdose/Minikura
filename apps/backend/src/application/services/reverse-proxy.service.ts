@@ -9,7 +9,11 @@ import type {
   ReverseProxyRepository,
   ReverseProxyUpdateInput,
 } from "../../domain/repositories/reverse-proxy.repository";
-import type { OperatorResourceSync } from "../../services/operator-resource-sync";
+import type { K8sService } from "../../services/k8s";
+import {
+  type OperatorResourceSync,
+  operatorResourceName,
+} from "../../services/operator-resource-sync";
 import type { IReverseProxyService } from "../interfaces/reverse-proxy.service.interface";
 import { BaseCrudService } from "./base-crud.service";
 
@@ -29,6 +33,7 @@ export class ReverseProxyService
 {
   constructor(
     reverseProxyRepo: ReverseProxyRepository,
+    private k8sService: K8sService,
     private operatorResourceSync: OperatorResourceSync
   ) {
     super(
@@ -78,5 +83,11 @@ export class ReverseProxyService
   override async deleteEnvVariable(proxyId: string, key: string): Promise<void> {
     await super.deleteEnvVariable(proxyId, key);
     await this.operatorResourceSync.syncReverseProxyById(proxyId);
+  }
+
+  async getConnectionInfo(proxyId: string) {
+    const proxy = await this.getReverseProxyById(proxyId);
+    const serviceName = `${String(proxy.type).toLowerCase()}-${operatorResourceName(proxyId)}`;
+    return this.k8sService.getServerConnectionInfo(serviceName);
   }
 }

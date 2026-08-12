@@ -2,6 +2,7 @@ import { getErrorMessage } from "@minikura/shared/errors";
 import { Elysia } from "elysia";
 import { k8sService } from "../application/di-container";
 import { logger } from "../infrastructure/logger";
+import { requireAuth } from "../middleware/auth-guards";
 
 type TerminalWsData = {
   query?: Record<string, string>;
@@ -25,7 +26,7 @@ type BunTlsOptions = {
   ca?: string;
 };
 
-export const terminalRoutes = new Elysia({ prefix: "/terminal" }).ws("/exec", {
+export const terminalRoutes = new Elysia({ prefix: "/terminal" }).use(requireAuth).ws("/exec", {
   open: async (ws: TerminalWs) => {
     const podName = ws.data.query?.podName;
     const container = ws.data.query?.container;

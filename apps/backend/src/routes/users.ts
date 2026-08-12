@@ -1,29 +1,27 @@
-import type { UpdateUserInput } from "@minikura/db";
 import { Elysia } from "elysia";
 import { userService } from "../application/di-container";
-import { requireAdmin, requireAuth } from "../middleware/auth-guards";
+import { requireAdmin } from "../middleware/auth-guards";
+import { updateSuspensionSchema, updateUserSchema } from "../schemas/user.schema";
 
 export const userRoutes = new Elysia({ prefix: "/users" })
   .use(requireAdmin)
   .get("/", async () => {
-    const users = await userService.getAllUsers();
-    return users;
+    return await userService.getAllUsers();
   })
-
-  .use(requireAuth)
   .get("/:id", async ({ params }) => {
-    const foundUser = await userService.getUserById(params.id);
-    return foundUser;
+    return await userService.getUserById(params.id);
   })
-
-  .use(requireAdmin)
   .patch("/:id", async ({ params, body }) => {
-    const input = body as UpdateUserInput;
-    const updatedUser = await userService.updateUser(params.id, input);
-    return updatedUser;
+    const input = updateUserSchema.parse(body);
+    return await userService.updateUser(params.id, input);
   })
-
-  .use(requireAuth)
+  .patch("/:id/suspension", async ({ params, body }) => {
+    const payload = updateSuspensionSchema.parse(body);
+    return await userService.updateSuspension(params.id, {
+      isSuspended: payload.isSuspended,
+      suspendedUntil: payload.suspendedUntil ? new Date(payload.suspendedUntil) : null,
+    });
+  })
   .delete("/:id", async ({ params, user }) => {
     await userService.deleteUser(user.id, params.id);
     return { success: true };

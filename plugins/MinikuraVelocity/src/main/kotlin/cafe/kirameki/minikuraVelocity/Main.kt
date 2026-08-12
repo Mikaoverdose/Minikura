@@ -42,7 +42,7 @@ class Main @Inject constructor(private val logger: Logger, private val server: P
     private val client = OkHttpClient()
     private val apiKey: String = System.getenv("MINIKURA_API_KEY") ?: ""
     private val apiUrl: String = System.getenv("MINIKURA_API_URL") ?: "http://localhost:3000/api"
-    private val websocketUrl: String = System.getenv("MINIKURA_WEBSOCKET_URL") ?: "ws://localhost:3000/ws?apiKey=$apiKey"
+    private val websocketUrl: String = System.getenv("MINIKURA_WEBSOCKET_URL") ?: "ws://localhost:3000/api/servers/ws?apiKey=$apiKey"
     private var acceptingTransfers = AtomicBoolean(false)
     private val redisBungeeApi = RedisBungeeAPI.getRedisBungeeApi()
 
@@ -158,7 +158,7 @@ class Main @Inject constructor(private val logger: Logger, private val server: P
 
     private fun fetchReverseProxyServers() {
         val request = Request.Builder()
-            .url("$apiUrl/reverse_proxy_servers")
+            .url("$apiUrl/plugin/reverse-proxy")
             .header("Authorization", "Bearer $apiKey")
             .build()
 
@@ -185,7 +185,7 @@ class Main @Inject constructor(private val logger: Logger, private val server: P
     private fun fetchServers() {
         server.allServers.forEach { server.unregisterServer(it.serverInfo) }
         val request = Request.Builder()
-            .url("$apiUrl/servers")
+            .url("$apiUrl/plugin/servers")
             .header("Authorization", "Bearer $apiKey")
             .build()
 
