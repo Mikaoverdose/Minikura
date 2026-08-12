@@ -23,8 +23,8 @@ export interface ResourceMetrics {
 export interface K8sNodeMetadata {
   node: K8sNodeSummary;
   podCount: number;
-  serverPods: string[]; // Pod names of servers
-  proxyPods: string[]; // Pod names of proxies
+  serverPods: string[];
+  proxyPods: string[];
   health: HealthStatus;
   metrics?: ResourceMetrics;
 }
@@ -35,8 +35,8 @@ export interface ServerMetadata {
   readyPods: number;
   pods: PodInfo[];
   health: HealthStatus;
-  connectedProxies: string[]; // IDs of reverse proxies pointing to this server
-  k8sNodes: string[]; // Names of K8s nodes running this server's pods
+  connectedProxies: string[];
+  k8sNodes: string[];
   connectionInfo?: ConnectionInfo | null;
   metrics?: ResourceMetrics;
 }
@@ -47,8 +47,8 @@ export interface ProxyMetadata {
   readyPods: number;
   pods: PodInfo[];
   health: HealthStatus;
-  connectedServers: string[]; // IDs of servers this proxy routes to
-  k8sNodes: string[]; // Names of K8s nodes running this proxy's pods
+  connectedServers: string[];
+  k8sNodes: string[];
   connectionInfo?: ConnectionInfo | null;
   metrics?: ResourceMetrics;
 }

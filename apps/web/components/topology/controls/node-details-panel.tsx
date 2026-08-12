@@ -3,18 +3,14 @@
 import { Box } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import type {
   K8sNodeMetadata,
   ProxyMetadata,
   ServerMetadata,
   TopologyNodeData,
 } from "@/lib/topology-types";
+import { DetailRow, DetailSection, HealthBadge } from "../topology-primitives";
 
 interface NodeDetailsPanelProps {
   node: TopologyNodeData | null;
@@ -22,11 +18,7 @@ interface NodeDetailsPanelProps {
   onClose: () => void;
 }
 
-export function NodeDetailsPanel({
-  node,
-  open,
-  onClose,
-}: NodeDetailsPanelProps) {
+export function NodeDetailsPanel({ node, open, onClose }: NodeDetailsPanelProps) {
   if (!node) return null;
 
   return (
@@ -37,7 +29,6 @@ export function NodeDetailsPanel({
         </SheetHeader>
 
         <div className="space-y-4 pr-2">
-          {/* Type and Status */}
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               <Badge variant="outline">
@@ -47,28 +38,16 @@ export function NodeDetailsPanel({
                     ? "Reverse Proxy"
                     : "Kubernetes Node"}
               </Badge>
-              <Badge
-                variant={
-                  node.status === "healthy"
-                    ? "default"
-                    : node.status === "degraded"
-                      ? "secondary"
-                      : "destructive"
-                }
-              >
+              <HealthBadge status={node.status} appearance="detail">
                 {node.status}
-              </Badge>
+              </HealthBadge>
             </div>
           </div>
 
           <Separator />
 
-          {node.type === "server" && (
-            <ServerDetails metadata={node.metadata as ServerMetadata} />
-          )}
-          {node.type === "proxy" && (
-            <ProxyDetails metadata={node.metadata as ProxyMetadata} />
-          )}
+          {node.type === "server" && <ServerDetails metadata={node.metadata as ServerMetadata} />}
+          {node.type === "proxy" && <ProxyDetails metadata={node.metadata as ProxyMetadata} />}
           {node.type === "k8s-node" && (
             <K8sNodeDetails metadata={node.metadata as K8sNodeMetadata} />
           )}
@@ -79,173 +58,79 @@ export function NodeDetailsPanel({
 }
 
 function ServerDetails({ metadata }: { metadata: ServerMetadata }) {
-  const { server, podCount, readyPods, pods, k8sNodes, connectedProxies } =
-    metadata;
+  const { server, podCount, readyPods, pods, k8sNodes, connectedProxies } = metadata;
 
   return (
     <div className="space-y-4">
       <DetailSection title="Server Configuration">
-        <DetailItem label="ID" value={server.id} />
-        {server.description && (
-          <DetailItem label="Description" value={server.description} />
-        )}
-        <DetailItem label="Type" value={server.type} />
-        <DetailItem label="Jar Type" value={server.jar_type} />
-        <DetailItem
-          label="Minecraft Version"
-          value={server.minecraft_version}
-        />
-        <DetailItem label="Port" value={server.listen_port.toString()} />
+        <DetailRow label="ID" value={server.id} />
+        {server.description && <DetailRow label="Description" value={server.description} />}
+        <DetailRow label="Type" value={server.type} />
+        <DetailRow label="Jar Type" value={server.jar_type} />
+        <DetailRow label="Minecraft Version" value={server.minecraft_version} />
+        <DetailRow label="Port" value={server.listen_port.toString()} />
       </DetailSection>
 
       <DetailSection title="Kubernetes Info">
-        <DetailItem label="Pods" value={`${readyPods}/${podCount} Ready`} />
-        {k8sNodes.length > 0 && (
-          <div className="space-y-1">
-            <div className="flex items-center gap-2 text-sm mb-2">
-              <Box className="h-4 w-4 text-muted-foreground" />
-              <span className="text-muted-foreground">
-                Running on {k8sNodes.length} K8s node(s):
-              </span>
-            </div>
-            {k8sNodes.map((nodeName) => (
-              <div
-                key={nodeName}
-                className="text-sm p-2 bg-blue-50 border border-blue-200 rounded ml-6"
-              >
-                <span className="font-mono text-xs break-all">{nodeName}</span>
-              </div>
-            ))}
-          </div>
-        )}
-        {pods.map((pod) => (
-          <div key={pod.name} className="text-sm mt-2 p-2 bg-muted rounded">
-            <div className="font-medium font-mono text-xs break-all">
-              {pod.name}
-            </div>
-            <div className="text-xs text-muted-foreground space-y-0.5 mt-1">
-              <div>
-                Status: {pod.status} • {pod.ready}
-              </div>
-              <div>Restarts: {pod.restarts}</div>
-              {pod.nodeName && (
-                <div className="flex items-center gap-1">
-                  <Box className="h-3 w-3 shrink-0" />
-                  <span className="break-all">Node: {pod.nodeName}</span>
-                </div>
-              )}
-            </div>
-          </div>
-        ))}
+        <KubernetesWorkloadDetails
+          podCount={podCount}
+          readyPods={readyPods}
+          pods={pods}
+          k8sNodes={k8sNodes}
+        />
       </DetailSection>
 
       {connectedProxies.length > 0 && (
         <DetailSection title="Proxy Connections">
-          <DetailItem
-            label="Behind Proxies"
-            value={connectedProxies.length.toString()}
+          <DetailRow label="Behind Proxies" value={connectedProxies.length.toString()} />
+          <IdentifierList
+            items={connectedProxies}
+            className="text-sm bg-blue-50 border border-blue-200"
           />
-          <div className="mt-2 space-y-1">
-            {connectedProxies.map((proxyId) => (
-              <div
-                key={proxyId}
-                className="text-sm p-2 bg-blue-50 border border-blue-200 rounded font-mono break-all"
-              >
-                {proxyId}
-              </div>
-            ))}
-          </div>
         </DetailSection>
       )}
 
       <DetailSection title="Resources">
-        <DetailItem
-          label="Memory"
-          value={`${server.memory_request}MB / ${server.memory}MB`}
-        />
-        <DetailItem
-          label="CPU Request"
-          value={server.cpu_request || "Not set"}
-        />
-        <DetailItem label="CPU Limit" value={server.cpu_limit || "Not set"} />
+        <DetailRow label="Memory" value={`${server.memory_request}MB / ${server.memory}MB`} />
+        <DetailRow label="CPU Request" value={server.cpu_request || "Not set"} />
+        <DetailRow label="CPU Limit" value={server.cpu_limit || "Not set"} />
       </DetailSection>
     </div>
   );
 }
 
 function ProxyDetails({ metadata }: { metadata: ProxyMetadata }) {
-  const { proxy, podCount, readyPods, pods, k8sNodes, connectedServers } =
-    metadata;
+  const { proxy, podCount, readyPods, pods, k8sNodes, connectedServers } = metadata;
 
   return (
     <div className="space-y-4">
       <DetailSection title="Proxy Configuration">
-        <DetailItem label="ID" value={proxy.id} />
-        {proxy.description && (
-          <DetailItem label="Description" value={proxy.description} />
-        )}
-        <DetailItem label="Type" value={proxy.type} />
-        <DetailItem
+        <DetailRow label="ID" value={proxy.id} />
+        {proxy.description && <DetailRow label="Description" value={proxy.description} />}
+        <DetailRow label="Type" value={proxy.type} />
+        <DetailRow
           label="External Address"
           value={`${proxy.external_address}:${proxy.external_port}`}
         />
-        <DetailItem label="Listen Port" value={proxy.listen_port.toString()} />
+        <DetailRow label="Listen Port" value={proxy.listen_port.toString()} />
       </DetailSection>
 
       <DetailSection title="Kubernetes Info">
-        <DetailItem label="Pods" value={`${readyPods}/${podCount} Ready`} />
-        {k8sNodes.length > 0 && (
-          <div className="space-y-1">
-            <div className="flex items-center gap-2 text-sm mb-2">
-              <Box className="h-4 w-4 text-muted-foreground" />
-              <span className="text-muted-foreground">
-                Running on {k8sNodes.length} K8s node(s):
-              </span>
-            </div>
-            {k8sNodes.map((nodeName) => (
-              <div
-                key={nodeName}
-                className="text-sm p-2 bg-blue-50 border border-blue-200 rounded ml-6"
-              >
-                <span className="font-mono text-xs break-all">{nodeName}</span>
-              </div>
-            ))}
-          </div>
-        )}
-        {pods.map((pod) => (
-          <div key={pod.name} className="text-sm mt-2 p-2 bg-muted rounded">
-            <div className="font-medium font-mono text-xs break-all">
-              {pod.name}
-            </div>
-            <div className="text-xs text-muted-foreground space-y-0.5 mt-1">
-              <div>
-                Status: {pod.status} • {pod.ready}
-              </div>
-              <div>Restarts: {pod.restarts}</div>
-              {pod.nodeName && (
-                <div className="flex items-center gap-1">
-                  <Box className="h-3 w-3 shrink-0" />
-                  <span className="break-all">Node: {pod.nodeName}</span>
-                </div>
-              )}
-            </div>
-          </div>
-        ))}
+        <KubernetesWorkloadDetails
+          podCount={podCount}
+          readyPods={readyPods}
+          pods={pods}
+          k8sNodes={k8sNodes}
+        />
       </DetailSection>
 
       <DetailSection title="Connected Servers">
-        <DetailItem label="Total" value={connectedServers.length.toString()} />
+        <DetailRow label="Total" value={connectedServers.length.toString()} />
         {connectedServers.length > 0 && (
-          <div className="mt-2 space-y-1">
-            {connectedServers.map((serverId) => (
-              <div
-                key={serverId}
-                className="text-sm p-2 bg-green-50 border border-green-200 rounded font-mono break-all"
-              >
-                {serverId}
-              </div>
-            ))}
-          </div>
+          <IdentifierList
+            items={connectedServers}
+            className="text-sm bg-green-50 border border-green-200"
+          />
         )}
       </DetailSection>
     </div>
@@ -258,57 +143,43 @@ function K8sNodeDetails({ metadata }: { metadata: K8sNodeMetadata }) {
   return (
     <div className="space-y-4">
       <DetailSection title="Node Information">
-        <DetailItem label="Name" value={node.name || "Unknown"} />
-        <DetailItem label="Status" value={node.status} />
-        {node.version && <DetailItem label="Version" value={node.version} />}
-        {node.internalIP && (
-          <DetailItem label="Internal IP" value={node.internalIP} />
-        )}
-        {node.externalIP && (
-          <DetailItem label="External IP" value={node.externalIP} />
-        )}
+        <DetailRow label="Name" value={node.name || "Unknown"} />
+        <DetailRow label="Status" value={node.status} />
+        {node.version && <DetailRow label="Version" value={node.version} />}
+        {node.internalIP && <DetailRow label="Internal IP" value={node.internalIP} />}
+        {node.externalIP && <DetailRow label="External IP" value={node.externalIP} />}
       </DetailSection>
 
       <DetailSection title="Node Details">
-        <DetailItem label="Roles" value={node.roles} />
-        <DetailItem label="Age" value={node.age} />
-        {node.hostname && <DetailItem label="Hostname" value={node.hostname} />}
+        <DetailRow label="Roles" value={node.roles} />
+        <DetailRow label="Age" value={node.age} />
+        {node.hostname && <DetailRow label="Hostname" value={node.hostname} />}
       </DetailSection>
 
       <DetailSection title="Running Pods">
-        <DetailItem label="Total Pods" value={podCount.toString()} />
-        <DetailItem label="Server Pods" value={serverPods.length.toString()} />
-        <DetailItem label="Proxy Pods" value={proxyPods.length.toString()} />
+        <DetailRow label="Total Pods" value={podCount.toString()} />
+        <DetailRow label="Server Pods" value={serverPods.length.toString()} />
+        <DetailRow label="Proxy Pods" value={proxyPods.length.toString()} />
 
         {serverPods.length > 0 && (
           <div className="mt-3">
             <p className="text-sm font-medium mb-2">Server Pods:</p>
-            <div className="space-y-1">
-              {serverPods.map((podName) => (
-                <div
-                  key={podName}
-                  className="text-xs p-2 bg-green-50 border border-green-200 rounded font-mono break-all"
-                >
-                  {podName}
-                </div>
-              ))}
-            </div>
+            <IdentifierList
+              items={serverPods}
+              className="text-xs bg-green-50 border border-green-200"
+              withMargin={false}
+            />
           </div>
         )}
 
         {proxyPods.length > 0 && (
           <div className="mt-3">
             <p className="text-sm font-medium mb-2">Proxy Pods:</p>
-            <div className="space-y-1">
-              {proxyPods.map((podName) => (
-                <div
-                  key={podName}
-                  className="text-xs p-2 bg-blue-50 border border-blue-200 rounded font-mono break-all"
-                >
-                  {podName}
-                </div>
-              ))}
-            </div>
+            <IdentifierList
+              items={proxyPods}
+              className="text-xs bg-blue-50 border border-blue-200"
+              withMargin={false}
+            />
           </div>
         )}
       </DetailSection>
@@ -316,26 +187,65 @@ function K8sNodeDetails({ metadata }: { metadata: K8sNodeMetadata }) {
   );
 }
 
-function DetailSection({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
+function KubernetesWorkloadDetails({
+  podCount,
+  readyPods,
+  pods,
+  k8sNodes,
+}: Pick<ServerMetadata, "podCount" | "readyPods" | "pods" | "k8sNodes">) {
   return (
-    <div className="space-y-2">
-      <h3 className="font-semibold text-sm">{title}</h3>
-      <div className="space-y-2">{children}</div>
-    </div>
+    <>
+      <DetailRow label="Pods" value={`${readyPods}/${podCount} Ready`} />
+      {k8sNodes.length > 0 && (
+        <div className="space-y-1">
+          <div className="flex items-center gap-2 text-sm mb-2">
+            <Box className="h-4 w-4 text-muted-foreground" />
+            <span className="text-muted-foreground">Running on {k8sNodes.length} K8s node(s):</span>
+          </div>
+          <IdentifierList
+            items={k8sNodes}
+            className="text-xs bg-blue-50 border border-blue-200 ml-6"
+            withMargin={false}
+          />
+        </div>
+      )}
+      {pods.map((pod) => (
+        <div key={pod.name} className="text-sm mt-2 p-2 bg-muted rounded">
+          <div className="font-medium font-mono text-xs break-all">{pod.name}</div>
+          <div className="text-xs text-muted-foreground space-y-0.5 mt-1">
+            <div>
+              Status: {pod.status} • {pod.ready}
+            </div>
+            <div>Restarts: {pod.restarts}</div>
+            {pod.nodeName && (
+              <div className="flex items-center gap-1">
+                <Box className="h-3 w-3 shrink-0" />
+                <span className="break-all">Node: {pod.nodeName}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      ))}
+    </>
   );
 }
 
-function DetailItem({ label, value }: { label: string; value: string }) {
+function IdentifierList({
+  items,
+  className,
+  withMargin = true,
+}: {
+  items: string[];
+  className: string;
+  withMargin?: boolean;
+}) {
   return (
-    <div className="flex justify-between items-start text-sm gap-4">
-      <span className="text-muted-foreground shrink-0">{label}:</span>
-      <span className="font-medium text-right break-words">{value}</span>
+    <div className={withMargin ? "mt-2 space-y-1" : "space-y-1"}>
+      {items.map((item) => (
+        <div key={item} className={`p-2 rounded font-mono break-all ${className}`}>
+          {item}
+        </div>
+      ))}
     </div>
   );
 }

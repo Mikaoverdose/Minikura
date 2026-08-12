@@ -1,10 +1,10 @@
 import type { TopologyEdge, TopologyNode } from "@/lib/topology-types";
 
 const LAYOUT_CONFIG = {
-  TIER_SPACING: 300, // Vertical spacing between proxy and server tiers
-  NODE_SPACING: 250, // Horizontal spacing between nodes
-  START_X: 150, // Left padding
-  START_Y: 100, // Top padding
+  TIER_SPACING: 300,
+  NODE_SPACING: 250,
+  START_X: 150,
+  START_Y: 100,
 } as const;
 
 export function applyHierarchicalLayout(

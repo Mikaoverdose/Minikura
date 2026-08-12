@@ -70,7 +70,7 @@ export function useGraphLayout({ nodes, edges }: LayoutInput) {
     const k8sNodePositions = new Map<string, { x: number; width: number }>();
 
     k8sWithApps.forEach((k8sNode) => {
-      const width = k8sNodeWidths.get(k8sNode.id)!;
+      const width = k8sNodeWidths.get(k8sNode.id) ?? nodeWidth;
       const centerX = currentX + width / 2;
 
       k8sNodePositions.set(k8sNode.id, { x: centerX, width });

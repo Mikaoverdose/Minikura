@@ -52,7 +52,7 @@ export function TopologyCanvas({ graph }: TopologyCanvasProps) {
   }, []);
 
   return (
-    <div className="h-[calc(100vh-250px)] w-full rounded-lg border bg-background shadow-xl">
+    <div className="h-[calc(100vh-250px)] min-h-[520px] w-full overflow-hidden rounded-sm border-2 border-foreground bg-background shadow-[6px_6px_0_color-mix(in_oklch,var(--foreground)_14%,transparent)]">
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -72,25 +72,25 @@ export function TopologyCanvas({ graph }: TopologyCanvasProps) {
           animated: false,
           type: "smoothstep",
           style: {
-            stroke: "#9ca3af",
+            stroke: "#6f7565",
             strokeWidth: 2,
             strokeDasharray: "5 5",
           },
           markerEnd: {
             type: "arrowclosed",
-            color: "#9ca3af",
+            color: "#6f7565",
             width: 20,
             height: 20,
           },
         }}
         proOptions={{ hideAttribution: true }}
       >
-        <Background variant={BackgroundVariant.Dots} color="#cbd5e1" gap={24} size={1} />
+        <Background variant={BackgroundVariant.Lines} color="#d2d0c5" gap={32} size={1} />
         <Controls
           showZoom
           showFitView
           showInteractive
-          className="bg-white/80 backdrop-blur-sm border shadow-lg"
+          className="border bg-card/95 shadow-md backdrop-blur-sm"
         />
         <MiniMap
           nodeColor={(node: any) => {
@@ -103,8 +103,8 @@ export function TopologyCanvas({ graph }: TopologyCanvasProps) {
             };
             return colors[data.status] || "#94a3b8";
           }}
-          maskColor="rgba(0, 0, 0, 0.05)"
-          className="bg-white/80 backdrop-blur-sm border shadow-lg"
+          maskColor="rgba(29, 31, 26, 0.08)"
+          className="border bg-card/95 shadow-md backdrop-blur-sm"
         />
 
         <Panel position="top-left">

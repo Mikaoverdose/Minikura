@@ -1,89 +1,52 @@
 "use client";
 
-import { Network, RefreshCw } from "lucide-react";
+import { Network } from "lucide-react";
+import { PageHeader, PageShell, StatePanel } from "@/components/page-layout";
 import { TopologyCanvas } from "@/components/topology/topology-canvas";
 import { useTopologyData } from "@/hooks/use-topology-data";
 
 export default function TopologyPage() {
   const { graph, loading, error } = useTopologyData();
 
-  if (loading) {
-    return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">Network Topology</h1>
-          <p className="text-muted-foreground mt-1">
-            Real-time server infrastructure, proxy connections, and Kubernetes nodes
-          </p>
+  const header = (
+    <PageHeader
+      eyebrow="Network / Live Graph"
+      title="Topology"
+      description="Real-time server infrastructure, proxy connections, and Kubernetes nodes"
+      leading={
+        <div className="border border-foreground bg-primary p-3 shadow-[3px_3px_0_var(--foreground)]">
+          <Network className="size-6 text-primary-foreground" />
         </div>
-        <div className="flex items-center justify-center h-[calc(100vh-250px)]">
-          <div className="flex flex-col items-center gap-2">
-            <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
-            <p className="text-muted-foreground">Loading topology...</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">Network Topology</h1>
-          <p className="text-muted-foreground mt-1">
-            Real-time server infrastructure, proxy connections, and Kubernetes nodes
-          </p>
-        </div>
-        <div className="flex items-center justify-center h-[calc(100vh-250px)] border-2 border-dashed rounded-lg">
-          <div className="flex flex-col items-center gap-2 p-6 text-center">
-            <p className="text-destructive font-semibold">Error loading topology</p>
-            <p className="text-muted-foreground text-sm">{error}</p>
-            <p className="text-muted-foreground text-xs mt-2">Auto-retrying...</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!graph || graph.nodes.length === 0) {
-    return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">Network Topology</h1>
-          <p className="text-muted-foreground mt-1">
-            Real-time server infrastructure, proxy connections, and Kubernetes nodes
-          </p>
-        </div>
-        <div className="flex items-center justify-center h-[calc(100vh-250px)] border-2 border-dashed rounded-lg">
-          <div className="flex flex-col items-center gap-2 p-6 text-center">
-            <p className="text-muted-foreground">No servers or infrastructure found</p>
-            <p className="text-sm text-muted-foreground">
-              Create a server to see it appear in the topology
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
+      }
+    />
+  );
 
   return (
-    <div className="space-y-6">
-      <div>
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-primary/10 rounded-lg">
-            <Network className="h-6 w-6 text-primary" />
-          </div>
-          <div>
-            <h1 className="text-3xl font-bold">Network Topology</h1>
-            <p className="text-muted-foreground mt-1">
-              Real-time server infrastructure, proxy connections, and Kubernetes nodes
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <TopologyCanvas graph={graph} />
-    </div>
+    <PageShell>
+      {header}
+      {loading ? (
+        <StatePanel loading title="Loading topology..." className="h-[calc(100vh-250px)]" />
+      ) : error ? (
+        <StatePanel
+          title="Error loading topology"
+          description={
+            <>
+              <p>{error}</p>
+              <p className="mt-2 text-xs">Auto-retrying...</p>
+            </>
+          }
+          tone="error"
+          className="h-[calc(100vh-250px)]"
+        />
+      ) : !graph || graph.nodes.length === 0 ? (
+        <StatePanel
+          title="No infrastructure found"
+          description="Create a server to see it appear in the topology."
+          className="h-[calc(100vh-250px)]"
+        />
+      ) : (
+        <TopologyCanvas graph={graph} />
+      )}
+    </PageShell>
   );
 }

@@ -4,8 +4,6 @@ export interface ResourceMetrics {
   memoryUsage?: string;
   memoryUsagePercent?: number;
 }
-
-/** Convert CPU nanoseconds (e.g. "123456789n") to millicores (e.g. "123m") */
 export function parseCpuUsage(cpuNano: string): string | undefined {
   const usageNano = Number.parseInt(cpuNano.replace("n", ""), 10);
   if (Number.isNaN(usageNano)) return undefined;
@@ -24,8 +22,6 @@ export function calculateCpuPercent(cpuNano: string, capacityNano: string): numb
 
   return Math.round((usageNano / capNano) * 100);
 }
-
-/** Convert memory kibibytes (e.g. "1024Ki") to mebibytes (e.g. "1Mi") */
 export function parseMemoryUsage(memoryKi: string): string | undefined {
   const usageKi = Number.parseInt(memoryKi.replace("Ki", ""), 10);
   if (Number.isNaN(usageKi)) return undefined;
@@ -44,8 +40,6 @@ export function calculateMemoryPercent(memoryKi: string, capacityKi: string): nu
 
   return Math.round((usageKi / capKi) * 100);
 }
-
-/** Parse raw K8s metrics into a standardized format with optional percentages */
 export function parseK8sMetrics(
   cpuUsage?: string,
   memoryUsage?: string,

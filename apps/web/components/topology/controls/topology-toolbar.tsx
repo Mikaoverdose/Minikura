@@ -1,14 +1,17 @@
 "use client";
 
+import type { LucideIcon } from "lucide-react";
 import { Box, Filter, Globe, Search, Server } from "lucide-react";
 import { useState } from "react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Switch } from "@/components/ui/switch";
 import type { TopologyFilters } from "@/lib/topology-types";
+import { HealthBadge } from "../topology-primitives";
+
+type ToggleFilterKey = "showServers" | "showProxies" | "showK8sNodes" | "showConnections";
 
 interface TopologyToolbarProps {
   filters: TopologyFilters;
@@ -32,54 +35,54 @@ export function TopologyToolbar({ filters, onFiltersChange, metadata }: Topology
     onFiltersChange({ ...filters, searchQuery: value });
   };
 
-  const toggleFilter = (key: keyof TopologyFilters) => {
+  const toggleFilter = (key: ToggleFilterKey) => {
     onFiltersChange({ ...filters, [key]: !filters[key] });
   };
 
+  const stats = [
+    { label: "Servers", value: metadata.totalServers, icon: Server },
+    { label: "Proxies", value: metadata.totalProxies, icon: Globe },
+    { label: "Nodes", value: metadata.totalK8sNodes, icon: Box },
+  ];
+
+  const filterOptions: Array<{
+    id: string;
+    label: string;
+    filter: ToggleFilterKey;
+    icon?: LucideIcon;
+  }> = [
+    { id: "show-servers", label: "Servers", filter: "showServers", icon: Server },
+    { id: "show-proxies", label: "Reverse Proxies", filter: "showProxies", icon: Globe },
+    { id: "show-k8s-nodes", label: "K8s Nodes", filter: "showK8sNodes", icon: Box },
+    { id: "show-connections", label: "Connection Lines", filter: "showConnections" },
+  ];
+
   return (
-    <div className="flex flex-col gap-3 p-4 bg-white/90 backdrop-blur-sm rounded-lg border shadow-lg min-w-[350px]">
-      {/* Stats */}
+    <div className="flex min-w-[280px] max-w-[calc(100vw-5rem)] flex-col gap-3 rounded-sm border-2 border-foreground bg-card/95 p-3 shadow-[5px_5px_0_color-mix(in_oklch,var(--foreground)_16%,transparent)] backdrop-blur-sm sm:min-w-[350px] sm:p-4">
       <div className="grid grid-cols-3 gap-2">
-        <div className="flex flex-col items-center p-2 bg-muted/50 rounded">
-          <div className="flex items-center gap-1 text-muted-foreground mb-1">
-            <Server className="h-3 w-3" />
-            <span className="text-xs">Servers</span>
+        {stats.map(({ label, value, icon: Icon }) => (
+          <div key={label} className="flex flex-col items-center border bg-muted/50 p-2">
+            <div className="flex items-center gap-1 text-muted-foreground mb-1">
+              <Icon className="h-3 w-3" />
+              <span className="text-xs">{label}</span>
+            </div>
+            <span className="text-lg font-bold">{value}</span>
           </div>
-          <span className="text-lg font-bold">{metadata.totalServers}</span>
-        </div>
-        <div className="flex flex-col items-center p-2 bg-muted/50 rounded">
-          <div className="flex items-center gap-1 text-muted-foreground mb-1">
-            <Globe className="h-3 w-3" />
-            <span className="text-xs">Proxies</span>
-          </div>
-          <span className="text-lg font-bold">{metadata.totalProxies}</span>
-        </div>
-        <div className="flex flex-col items-center p-2 bg-muted/50 rounded">
-          <div className="flex items-center gap-1 text-muted-foreground mb-1">
-            <Box className="h-3 w-3" />
-            <span className="text-xs">Nodes</span>
-          </div>
-          <span className="text-lg font-bold">{metadata.totalK8sNodes}</span>
-        </div>
+        ))}
       </div>
 
-      {/* Health Status */}
       <div className="flex gap-2 justify-between text-xs">
-        <Badge variant="outline" className="flex items-center gap-1">
-          <div className="w-2 h-2 rounded-full bg-green-500" />
+        <HealthBadge status="healthy" appearance="summary">
           {metadata.healthySystems} Healthy
-        </Badge>
-        <Badge variant="outline" className="flex items-center gap-1">
-          <div className="w-2 h-2 rounded-full bg-yellow-500" />
+        </HealthBadge>
+        <HealthBadge status="degraded" appearance="summary">
           {metadata.degradedSystems} Degraded
-        </Badge>
-        <Badge variant="outline" className="flex items-center gap-1">
-          <div className="w-2 h-2 rounded-full bg-red-500" />
+        </HealthBadge>
+        <HealthBadge status="unhealthy" appearance="summary">
           {metadata.unhealthySystems} Down
-        </Badge>
+        </HealthBadge>
       </div>
 
-      {/* Search */}
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
@@ -90,7 +93,6 @@ export function TopologyToolbar({ filters, onFiltersChange, metadata }: Topology
         />
       </div>
 
-      {/* Filters */}
       <Popover>
         <PopoverTrigger asChild>
           <Button variant="outline" size="sm" className="w-full">
@@ -103,52 +105,22 @@ export function TopologyToolbar({ filters, onFiltersChange, metadata }: Topology
             <div>
               <h4 className="font-semibold mb-3">Show/Hide</h4>
               <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="show-servers" className="flex items-center gap-2 cursor-pointer">
-                    <Server className="h-4 w-4" />
-                    <span>Servers</span>
-                  </Label>
-                  <Switch
-                    id="show-servers"
-                    checked={filters.showServers}
-                    onCheckedChange={() => toggleFilter("showServers")}
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="show-proxies" className="flex items-center gap-2 cursor-pointer">
-                    <Globe className="h-4 w-4" />
-                    <span>Reverse Proxies</span>
-                  </Label>
-                  <Switch
-                    id="show-proxies"
-                    checked={filters.showProxies}
-                    onCheckedChange={() => toggleFilter("showProxies")}
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <Label
-                    htmlFor="show-k8s-nodes"
-                    className="flex items-center gap-2 cursor-pointer"
-                  >
-                    <Box className="h-4 w-4" />
-                    <span>K8s Nodes</span>
-                  </Label>
-                  <Switch
-                    id="show-k8s-nodes"
-                    checked={filters.showK8sNodes}
-                    onCheckedChange={() => toggleFilter("showK8sNodes")}
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="show-connections" className="cursor-pointer">
-                    Connection Lines
-                  </Label>
-                  <Switch
-                    id="show-connections"
-                    checked={filters.showConnections}
-                    onCheckedChange={() => toggleFilter("showConnections")}
-                  />
-                </div>
+                {filterOptions.map(({ id, label, filter, icon: Icon }) => (
+                  <div key={id} className="flex items-center justify-between">
+                    <Label
+                      htmlFor={id}
+                      className={Icon ? "flex items-center gap-2 cursor-pointer" : "cursor-pointer"}
+                    >
+                      {Icon && <Icon className="h-4 w-4" />}
+                      <span>{label}</span>
+                    </Label>
+                    <Switch
+                      id={id}
+                      checked={filters[filter]}
+                      onCheckedChange={() => toggleFilter(filter)}
+                    />
+                  </div>
+                ))}
               </div>
             </div>
           </div>
