@@ -95,7 +95,6 @@ export class PrismaReverseProxyRepository implements ReverseProxyRepository {
       throw new NotFoundError("ReverseProxyServer", id);
     }
 
-    // Update proxy fields
     const updated = await prisma.reverseProxyServer.update({
       where: { id },
       data: {

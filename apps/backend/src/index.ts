@@ -2,8 +2,8 @@ import { dotenvLoad } from "dotenv-mono";
 
 dotenvLoad();
 
-import { Elysia } from "elysia";
 import { node } from "@elysiajs/node";
+import { Elysia } from "elysia";
 import { logger } from "./infrastructure/logger";
 import { auth } from "./middleware/auth";
 import { authPlugin } from "./middleware/auth-plugin";
@@ -15,7 +15,6 @@ import { serverRoutes } from "./routes/servers";
 import { terminalRoutes } from "./routes/terminal";
 import { userRoutes } from "./routes/users";
 
-// Register event handlers
 import "./infrastructure/event-handlers";
 
 const app = new Elysia({ adapter: node() })
@@ -33,8 +32,7 @@ const app = new Elysia({ adapter: node() })
   .use(authPlugin)
   .group("/api", (app) =>
     app.use(userRoutes).use(serverRoutes).use(reverseProxyRoutes).use(k8sRoutes).use(terminalRoutes)
-  )
-  .get("/health", () => ({ status: "ok" }));
+  );
 
 export type App = typeof app;
 

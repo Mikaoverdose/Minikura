@@ -4,7 +4,6 @@ import type {
   Server as PrismaServer,
 } from "@minikura/db";
 
-// Base interface
 export interface CustomResource {
   apiVersion: string;
   kind: string;
@@ -44,8 +43,6 @@ export interface MinecraftServerCRD extends CustomResource {
   spec: MinecraftServerSpec;
   status?: MinecraftServerStatus;
 }
-
-// Reverse Proxy Types
 
 export type ReverseProxyConfig = Pick<
   PrismaReverseProxyServer,

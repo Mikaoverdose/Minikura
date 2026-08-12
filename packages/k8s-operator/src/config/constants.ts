@@ -10,7 +10,6 @@ export const NAMESPACE = process.env.KUBERNETES_NAMESPACE || "minikura";
 
 export const ENABLE_CRD_REFLECTION = process.env.ENABLE_CRD_REFLECTION === "true";
 
-// Resource types
 export const RESOURCE_TYPES = {
   MINECRAFT_SERVER: {
     kind: "MinecraftServer",
@@ -26,8 +25,7 @@ export const RESOURCE_TYPES = {
   },
 };
 
-// Polling intervals (in milliseconds)
-export const SYNC_INTERVAL = 30 * 1000; // 30 seconds
+export const SYNC_INTERVAL = 30 * 1000;
 
 export const IMAGES = {
   MINECRAFT: "itzg/minecraft-server",

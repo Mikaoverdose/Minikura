@@ -9,7 +9,6 @@ export const RESOURCE_DEFAULTS = {
   },
 } as const;
 
-// 80% of container memory goes to JVM heap; 20% headroom
 export const JAVA_MEMORY_FACTOR = 0.8;
 
 export const DEFAULT_SERVER_MEMORY = "1G";

@@ -7,8 +7,6 @@ export function getErrorMessage(error: unknown): string {
   }
   return String(error);
 }
-
-/** Returns age string like "3d", "12h", "5m" */
 export function getAge(timestamp: Date | string | undefined): string {
   if (!timestamp) return "unknown";
 

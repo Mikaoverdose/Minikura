@@ -7,7 +7,6 @@ datasource db {
   provider = "postgresql"
 }
 
-// Better Auth Models
 model User {
   id             String    @id
   name           String
@@ -68,7 +67,6 @@ model Verification {
   @@map("verification")
 }
 
-// Application Models
 enum ServerType {
   STATEFUL
   STATELESS
@@ -141,16 +139,13 @@ model Server {
   env_variables        CustomEnvironmentVariable[] @relation("ServerEnvVars")
   api_key              String                      @unique
 
-  // Minecraft specific configurations
   jar_type             MinecraftServerJarType      @default(VANILLA)
   minecraft_version    String                      @default("LATEST") // e.g., "LATEST", "1.20.4", "SNAPSHOT"
 
-  // JVM Options
   jvm_opts             String?                     // Custom JVM options
   use_aikar_flags      Boolean                     @default(false)
   use_meowice_flags    Boolean                     @default(false)
 
-  // Server Properties (common ones)
   difficulty           ServerDifficulty            @default(EASY)
   game_mode            GameMode                    @default(SURVIVAL)
   max_players          Int                         @default(20)

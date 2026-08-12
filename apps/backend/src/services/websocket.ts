@@ -33,7 +33,6 @@ export class WebSocketService implements IWebSocketService {
       timestamp: new Date().toISOString(),
     });
 
-    // Send to all connected clients, removing any that fail
     let failedClients = 0;
     this.clients.forEach((client) => {
       try {

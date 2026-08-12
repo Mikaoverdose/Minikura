@@ -107,12 +107,10 @@ export class PrismaServerRepository implements ServerRepository {
       throw new NotFoundError("Server", id);
     }
 
-    // Handle env variables separately
     if (input.env_variables !== undefined) {
       await this.replaceEnvVariables(id, input.env_variables);
     }
 
-    // Update server fields
     const updated = await prisma.server.update({
       where: { id },
       data: {

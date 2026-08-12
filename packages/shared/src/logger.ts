@@ -1,16 +1,12 @@
 import pino from "pino";
 
 export function createLogger(component: string): pino.Logger;
+export function createLogger(context: Record<string, string | number>): pino.Logger;
 export function createLogger(
-  context: Record<string, string | number>,
-): pino.Logger;
-export function createLogger(
-  componentOrContext: string | Record<string, string | number>,
+  componentOrContext: string | Record<string, string | number>
 ): pino.Logger {
   const isString = typeof componentOrContext === "string";
-  const baseContext = isString
-    ? { component: componentOrContext }
-    : componentOrContext;
+  const baseContext = isString ? { component: componentOrContext } : componentOrContext;
 
   return pino({
     level: process.env.LOG_LEVEL || "info",

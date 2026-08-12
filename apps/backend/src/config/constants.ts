@@ -8,13 +8,13 @@ export const DEFAULT_PORTS = {
 } as const;
 
 export const DEFAULT_MEMORY = {
-  SERVER: 2048, // MB
-  REVERSE_PROXY: 512, // MB
+  SERVER: 2048,
+  REVERSE_PROXY: 512,
 } as const;
 
 export const DEFAULT_MEMORY_REQUEST = {
-  SERVER: 1024, // MB
-  REVERSE_PROXY: 512, // MB
+  SERVER: 1024,
+  REVERSE_PROXY: 512,
 } as const;
 
 export const DEFAULT_CPU = {

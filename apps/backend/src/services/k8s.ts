@@ -6,9 +6,7 @@ import type { IK8sService } from "../application/interfaces/k8s.service.interfac
 import { logger } from "../infrastructure/logger";
 import { ClusterOperations } from "./kubernetes/operations/cluster.operations";
 import { CustomResourceOperations } from "./kubernetes/operations/custom-resource.operations";
-import { NetworkOperations } from "./kubernetes/operations/network.operations";
 import { PodOperations } from "./kubernetes/operations/pod.operations";
-import { WorkloadOperations } from "./kubernetes/operations/workload.operations";
 import { K8sResources } from "./kubernetes/resources";
 
 const CUSTOM_RESOURCE_VERSION = "v1alpha1";
@@ -56,8 +54,6 @@ export class K8sService implements IK8sService {
 
   private initializeOperations(): void {
     this.podOps = new PodOperations(this.coreApi, this.namespace);
-    this.workloadOps = new WorkloadOperations(this.appsApi, this.namespace);
-    this.networkOps = new NetworkOperations(this.coreApi, this.networkingApi, this.namespace);
     this.clusterOps = new ClusterOperations(this.coreApi, this.customObjectsApi, this.namespace);
     this.customResourceOps = new CustomResourceOperations(this.customObjectsApi, this.namespace);
   }

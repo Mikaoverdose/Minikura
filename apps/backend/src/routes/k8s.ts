@@ -46,7 +46,6 @@ export const k8sRoutes = new Elysia({ prefix: "/k8s" })
     };
     const logs = await k8sService.getPodLogs(params.podName, options);
 
-    // Return as plain text
     const headers = (set.headers ?? {}) as Record<string, string>;
     headers["content-type"] = "text/plain";
     set.headers = headers;
