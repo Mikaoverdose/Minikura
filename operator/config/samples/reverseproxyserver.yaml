@@ -1,0 +1,17 @@
+apiVersion: minikura.kirameki.cafe/v1alpha1
+kind: ReverseProxyServer
+metadata:
+  name: edge
+spec:
+  type: VELOCITY
+  description: Example Velocity proxy
+  externalAddress: play.example.com
+  externalPort: 25565
+  listenPort: 25577
+  serviceType: LoadBalancer
+  resources:
+    memoryLimitMB: 1024
+    cpuRequest: 250m
+    cpuLimit: "1"
+  jvm:
+    heapPercent: 80

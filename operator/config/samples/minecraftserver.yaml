@@ -1,0 +1,44 @@
+apiVersion: minikura.kirameki.cafe/v1alpha1
+kind: MinecraftServer
+metadata:
+  name: survival
+spec:
+  type: STATEFUL
+  description: Example SMP server
+  jarType: PAPER
+  minecraftVersion: "1.20.4"
+  listenPort: 25565
+  serviceType: ClusterIP
+  storageSize: 5Gi
+  resources:
+    memoryLimitMB: 4096
+    memoryRequestMB: 2048
+    cpuRequest: 500m
+    cpuLimit: "2"
+  jvm:
+    useAikarFlags: true
+    heapPercent: 80
+  properties:
+    difficulty: HARD
+    gameMode: SURVIVAL
+    maxPlayers: 20
+    pvp: true
+    onlineMode: true
+    motd: A Minikura server
+---
+apiVersion: minikura.kirameki.cafe/v1alpha1
+kind: MinecraftServer
+metadata:
+  name: lobby
+  labels:
+    role: lobby
+spec:
+  type: STATELESS
+  jarType: PAPER
+  minecraftVersion: "1.20.4"
+  serviceType: ClusterIP
+  resources:
+    memoryLimitMB: 2048
+  properties:
+    gameMode: ADVENTURE
+    maxPlayers: 100
