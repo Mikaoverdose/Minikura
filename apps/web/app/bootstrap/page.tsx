@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { AuthFormCard, FormError } from "@/components/auth/auth-form-card";
 import { BrandMark } from "@/components/brand";
 import { FullScreenLoader } from "@/components/page-layout";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { api } from "@/lib/api-client";
@@ -82,7 +83,8 @@ export default function BootstrapPage() {
   if (checkingStatus) return <FullScreenLoader label="Checking setup" />;
 
   return (
-    <main className="auth-grid flex min-h-screen items-center justify-center bg-sidebar p-5 sm:p-10">
+    <main className="auth-grid relative flex min-h-screen items-center justify-center bg-sidebar p-5 sm:p-10">
+      <ThemeToggle className="absolute top-5 right-5 sm:top-8 sm:right-8" />
       <div className="grid w-full max-w-5xl overflow-hidden border border-sidebar-border bg-background text-foreground shadow-[12px_12px_0_color-mix(in_oklch,var(--sidebar-primary)_18%,transparent)] lg:grid-cols-[0.8fr_1.2fr]">
         <section className="flex flex-col justify-between bg-primary p-8 text-primary-foreground sm:p-10">
           <BrandMark inverted />

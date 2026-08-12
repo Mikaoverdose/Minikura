@@ -1,6 +1,7 @@
 "use client";
 
 import { Background, BackgroundVariant, Controls, MiniMap, Panel, ReactFlow } from "@xyflow/react";
+import { useTheme } from "next-themes";
 import { useCallback, useMemo, useState } from "react";
 import "@xyflow/react/dist/style.css";
 import { useGraphLayout } from "@/hooks/use-graph-layout";
@@ -15,6 +16,7 @@ interface TopologyCanvasProps {
 }
 
 export function TopologyCanvas({ graph }: TopologyCanvasProps) {
+  const { resolvedTheme } = useTheme();
   const [selectedNode, setSelectedNode] = useState<TopologyNodeData | null>(null);
   const [filters, setFilters] = useState<TopologyFilters>({
     showServers: true,
@@ -68,24 +70,25 @@ export function TopologyCanvas({ graph }: TopologyCanvasProps) {
         }}
         minZoom={0.1}
         maxZoom={1.5}
+        colorMode={resolvedTheme === "dark" ? "dark" : "light"}
         defaultEdgeOptions={{
           animated: false,
           type: "smoothstep",
           style: {
-            stroke: "#6f7565",
+            stroke: "var(--muted-foreground)",
             strokeWidth: 2,
             strokeDasharray: "5 5",
           },
           markerEnd: {
             type: "arrowclosed",
-            color: "#6f7565",
+            color: "var(--muted-foreground)",
             width: 20,
             height: 20,
           },
         }}
         proOptions={{ hideAttribution: true }}
       >
-        <Background variant={BackgroundVariant.Lines} color="#d2d0c5" gap={32} size={1} />
+        <Background variant={BackgroundVariant.Lines} color="var(--border)" gap={32} size={1} />
         <Controls
           showZoom
           showFitView
@@ -103,7 +106,7 @@ export function TopologyCanvas({ graph }: TopologyCanvasProps) {
             };
             return colors[data.status] || "#94a3b8";
           }}
-          maskColor="rgba(29, 31, 26, 0.08)"
+          maskColor="color-mix(in oklch, var(--foreground) 8%, transparent)"
           className="border bg-card/95 shadow-md backdrop-blur-sm"
         />
 

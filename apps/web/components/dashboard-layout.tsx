@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { BrandLockup } from "@/components/brand";
 import { FullScreenLoader } from "@/components/page-layout";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -161,6 +162,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           <span className="truncate font-mono text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground">
             {currentPage ? `${currentPage.context} / ${currentPage.label}` : "Control plane"}
           </span>
+          <ThemeToggle className="ml-auto" />
         </header>
         <main className="min-w-0 flex-1 overflow-auto p-4 sm:p-6 lg:p-8">{children}</main>
       </SidebarInset>

@@ -42,7 +42,7 @@ export function HealthBadge({
       healthy: "bg-green-500",
       degraded: "bg-yellow-500",
       unhealthy: "bg-red-500",
-      unknown: "bg-gray-400",
+      unknown: "bg-muted-foreground",
     }[status];
 
     return (
@@ -100,10 +100,10 @@ export function TopologyNodeCard({
     <div
       className={cn(
         "rounded-lg border bg-card p-3 shadow-md hover:shadow-lg transition-all w-[300px]",
-        selected && "ring-2 ring-primary ring-offset-2 shadow-xl"
+        selected && "ring-2 ring-primary ring-offset-2 ring-offset-background shadow-xl"
       )}
     >
-      <Handle type="target" position={Position.Top} className="w-3 h-3 !bg-gray-400" />
+      <Handle type="target" position={Position.Top} className="h-3 w-3 !bg-muted-foreground" />
       <div className="space-y-2.5">
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -119,7 +119,7 @@ export function TopologyNodeCard({
         </div>
         {children}
       </div>
-      <Handle type="source" position={Position.Bottom} className="w-3 h-3 !bg-gray-400" />
+      <Handle type="source" position={Position.Bottom} className="h-3 w-3 !bg-muted-foreground" />
     </div>
   );
 }

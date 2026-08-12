@@ -89,40 +89,46 @@
   --sidebar-accent-foreground: oklch(0.96 0.01 95);
   --sidebar-border: oklch(0.31 0.025 80);
   --sidebar-ring: oklch(0.75 0.205 125);
+  color-scheme: light;
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --background: oklch(0.16 0.018 75);
+  --foreground: oklch(0.94 0.012 95);
+  --card: oklch(0.21 0.018 75);
+  --card-foreground: oklch(0.94 0.012 95);
+  --popover: oklch(0.19 0.018 75);
+  --popover-foreground: oklch(0.94 0.012 95);
+  --primary: oklch(0.75 0.205 125);
+  --primary-foreground: oklch(0.15 0.025 125);
+  --secondary: oklch(0.26 0.02 80);
+  --secondary-foreground: oklch(0.94 0.012 95);
+  --muted: oklch(0.24 0.016 80);
+  --muted-foreground: oklch(0.72 0.018 90);
+  --accent: oklch(0.28 0.04 112);
+  --accent-foreground: oklch(0.92 0.03 110);
+  --destructive: oklch(0.68 0.19 28);
+  --success: oklch(0.72 0.155 132);
+  --success-foreground: oklch(0.22 0.06 132);
+  --warning: oklch(0.78 0.14 76);
+  --warning-foreground: oklch(0.28 0.08 66);
+  --border: oklch(0.35 0.02 80);
+  --input: oklch(0.32 0.02 80);
+  --ring: oklch(0.75 0.205 125);
+  --chart-1: oklch(0.75 0.205 125);
+  --chart-2: oklch(0.66 0.16 205);
+  --chart-3: oklch(0.72 0.17 80);
+  --chart-4: oklch(0.62 0.16 50);
+  --chart-5: oklch(0.58 0.14 300);
+  --sidebar: oklch(0.13 0.018 75);
+  --sidebar-foreground: oklch(0.91 0.015 95);
+  --sidebar-primary: oklch(0.75 0.205 125);
+  --sidebar-primary-foreground: oklch(0.15 0.025 125);
+  --sidebar-accent: oklch(0.22 0.022 80);
+  --sidebar-accent-foreground: oklch(0.96 0.01 95);
+  --sidebar-border: oklch(0.28 0.022 80);
+  --sidebar-ring: oklch(0.75 0.205 125);
+  color-scheme: dark;
 }
 
 @layer base {
@@ -174,8 +180,8 @@
 
   .auth-grid {
     background-image:
-      linear-gradient(to right, color-mix(in oklch, white 9%, transparent) 1px, transparent 1px),
-      linear-gradient(to bottom, color-mix(in oklch, white 9%, transparent) 1px, transparent 1px);
+      linear-gradient(to right, color-mix(in oklch, var(--sidebar-foreground) 9%, transparent) 1px, transparent 1px),
+      linear-gradient(to bottom, color-mix(in oklch, var(--sidebar-foreground) 9%, transparent) 1px, transparent 1px);
     background-size: 36px 36px;
   }
 

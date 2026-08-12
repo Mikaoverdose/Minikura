@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { AuthFormCard, FormError } from "@/components/auth/auth-form-card";
 import { BrandLockup } from "@/components/brand";
 import { FullScreenLoader } from "@/components/page-layout";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { authClient, signIn, useSession } from "@/lib/auth-client";
@@ -87,7 +88,8 @@ export default function LoginPage() {
         </p>
       </section>
 
-      <section className="flex items-center justify-center bg-background p-5 text-foreground sm:p-10">
+      <section className="relative flex items-center justify-center bg-background p-5 text-foreground sm:p-10">
+        <ThemeToggle className="absolute top-5 right-5 sm:top-8 sm:right-8" />
         <AuthFormCard
           title="Sign In"
           description="Use your administrator account to access Minikura."
