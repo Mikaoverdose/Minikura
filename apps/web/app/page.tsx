@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
 
-const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+const apiUrl = process.env.API_URL || "http://localhost:3000";
 const api = treaty<App>(apiUrl);
 
 export default async function HomePage() {

@@ -1,7 +1,10 @@
 import { treaty } from "@elysiajs/eden";
 import type { App } from "@minikura/backend";
 
-const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
+const baseUrl =
+  typeof window === "undefined"
+    ? process.env.API_URL || "http://localhost:3000"
+    : window.location.origin;
 
 export const api = treaty<App>(baseUrl, {
   fetch: {

@@ -33,7 +33,7 @@ services:
       - KUBECONFIG=/home/dev/.kube/config
       - DATABASE_URL=postgresql://postgres:postgres@db:5432/minikura?sslmode=disable
       - WEB_URL=http://localhost:3001
-      - NEXT_PUBLIC_API_URL=http://localhost:3000
+      - API_URL=http://localhost:3000
       - KUBERNETES_NAMESPACE=minikura
       - ENABLE_CRD_REFLECTION=true
 
