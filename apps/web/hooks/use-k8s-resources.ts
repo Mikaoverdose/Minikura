@@ -9,23 +9,9 @@ import type {
   PodInfo,
   StatefulSetInfo,
 } from "@minikura/api";
+import { getErrorMessage } from "@minikura/shared/errors";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "@/lib/api-client";
-
-function getErrorMessage(error: unknown) {
-  if (error instanceof Error) {
-    return error.message;
-  }
-
-  if (typeof error === "object" && error) {
-    const value = "value" in error ? error.value : error;
-    if (typeof value === "object" && value && "message" in value) {
-      return String(value.message);
-    }
-  }
-
-  return "Failed to fetch Kubernetes resources";
-}
 
 export function useK8sResources() {
   const [status, setStatus] = useState<K8sStatus | null>(null);

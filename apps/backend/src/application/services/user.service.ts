@@ -3,7 +3,7 @@ import { BusinessRuleError, NotFoundError } from "../../domain/errors/base.error
 import {
   UserSuspendedEvent,
   UserUnsuspendedEvent,
-} from "../../domain/events/server-lifecycle.events";
+} from "../../domain/events/user-lifecycle.events";
 import type { UserRepository } from "../../domain/repositories/user.repository";
 import { eventBus } from "../../infrastructure/event-bus";
 import type { IUserService } from "../interfaces/user.service.interface";
@@ -17,10 +17,6 @@ export class UserService implements IUserService {
       throw new NotFoundError("User", id);
     }
     return user;
-  }
-
-  async getUserByEmail(email: string): Promise<User | null> {
-    return this.userRepo.findByEmail(email);
   }
 
   async getAllUsers(): Promise<User[]> {
@@ -40,20 +36,6 @@ export class UserService implements IUserService {
       await eventBus.publish(new UserUnsuspendedEvent(id));
     }
     return user;
-  }
-
-  async suspendUser(id: string, suspendedUntil?: Date | null): Promise<User> {
-    return this.updateSuspension(id, {
-      isSuspended: true,
-      suspendedUntil: suspendedUntil ?? null,
-    });
-  }
-
-  async unsuspendUser(id: string): Promise<User> {
-    return this.updateSuspension(id, {
-      isSuspended: false,
-      suspendedUntil: null,
-    });
   }
 
   async deleteUser(requestingUserId: string, targetUserId: string): Promise<void> {

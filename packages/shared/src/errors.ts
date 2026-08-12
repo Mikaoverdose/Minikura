@@ -5,6 +5,12 @@ export function getErrorMessage(error: unknown): string {
   if (typeof error === "string") {
     return error;
   }
+  if (typeof error === "object" && error) {
+    const value = "value" in error ? error.value : error;
+    if (typeof value === "object" && value && "message" in value) {
+      return String(value.message);
+    }
+  }
   return String(error);
 }
 export function getAge(timestamp: Date | string | undefined): string {

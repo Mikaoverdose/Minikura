@@ -2,10 +2,8 @@ import { labelKeys } from "@minikura/api";
 import { Elysia } from "elysia";
 import { k8sService } from "../application/di-container";
 import { requireAuth } from "../middleware/auth-guards";
-import { authPlugin } from "../middleware/auth-plugin";
 
 export const k8sRoutes = new Elysia({ prefix: "/k8s" })
-  .use(authPlugin)
   .use(requireAuth)
   .get("/status", async () => {
     return k8sService.getConnectionInfo();

@@ -5,7 +5,6 @@ type EventHandler<T extends DomainEvent = DomainEvent> = (event: T) => void | Pr
 
 export class EventBus {
   private handlers = new Map<string, Set<EventHandler>>();
-  private eventHistory: DomainEvent[] = [];
 
   subscribe<T extends DomainEvent>(
     eventClass: { new (...args: any[]): T },
@@ -22,7 +21,6 @@ export class EventBus {
   }
 
   async publish<T extends DomainEvent>(event: T): Promise<void> {
-    this.eventHistory.push(event);
     const eventName = event.constructor.name;
     const handlers = this.handlers.get(eventName) || [];
     for (const handler of handlers) {
@@ -32,14 +30,6 @@ export class EventBus {
         logger.error({ err: error, eventName }, "Error executing event handler");
       }
     }
-  }
-
-  getHistory(): DomainEvent[] {
-    return [...this.eventHistory];
-  }
-
-  clearHistory(): void {
-    this.eventHistory = [];
   }
 }
 

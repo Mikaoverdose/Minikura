@@ -54,7 +54,7 @@ export class K8sService implements IK8sService {
 
   private initializeOperations(): void {
     this.podOps = new PodOperations(this.coreApi, this.namespace);
-    this.clusterOps = new ClusterOperations(this.coreApi, this.customObjectsApi, this.namespace);
+    this.clusterOps = new ClusterOperations(this.customObjectsApi, this.namespace);
     this.customResourceOps = new CustomResourceOperations(this.customObjectsApi, this.namespace);
   }
 

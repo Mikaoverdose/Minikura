@@ -8,12 +8,6 @@ export class PrismaUserRepository implements UserRepository {
     });
   }
 
-  async findByEmail(email: string): Promise<User | null> {
-    return await prisma.user.findUnique({
-      where: { email },
-    });
-  }
-
   async findAll(): Promise<User[]> {
     return await prisma.user.findMany({
       orderBy: { createdAt: "desc" },
@@ -38,9 +32,5 @@ export class PrismaUserRepository implements UserRepository {
     await prisma.user.delete({
       where: { id },
     });
-  }
-
-  async count(): Promise<number> {
-    return await prisma.user.count();
   }
 }

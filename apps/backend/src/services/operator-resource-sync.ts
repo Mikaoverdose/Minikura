@@ -1,9 +1,8 @@
 import * as k8s from "@kubernetes/client-node";
+import { API_GROUP } from "@minikura/api";
 import { prisma, type ReverseProxyWithEnvVars, type ServerWithEnvVars } from "@minikura/db";
 import { buildKubeConfig } from "@minikura/shared/kube-auth";
 import { logger } from "../infrastructure/logger";
-
-const API_GROUP = "minikura.kirameki.cafe";
 const API_VERSION = "v1alpha1";
 const FIELD_MANAGER = "minikura-backend";
 const SYNC_INTERVAL_MS = 30_000;

@@ -6,19 +6,15 @@ import type {
   ReverseProxyServer,
 } from "@minikura/api";
 import type { Edge, Node } from "@xyflow/react";
+import type { ResourceMetrics } from "./k8s-metrics";
+
+export type { ResourceMetrics };
 
 export type HealthStatus = "healthy" | "degraded" | "unhealthy" | "unknown";
 
 export type NodeType = "server" | "proxy" | "k8s-node";
 
 export type EdgeType = "proxy-to-server" | "pod-to-node";
-
-export interface ResourceMetrics {
-  cpuUsage?: string;
-  memoryUsage?: string;
-  cpuUsagePercent?: number;
-  memoryUsagePercent?: number;
-}
 
 export interface K8sNodeMetadata {
   node: K8sNodeSummary;

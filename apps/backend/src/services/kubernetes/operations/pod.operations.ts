@@ -9,30 +9,6 @@ export class PodOperations extends BaseK8sOperations {
     super(namespace);
   }
 
-  async listPods() {
-    return this.executeOperation(
-      () => this.coreApi.listNamespacedPod({ namespace: this.namespace }).then((r) => r.items),
-      "Failed to fetch pods"
-    );
-  }
-
-  async listPodsByLabel(labelSelector: string) {
-    return this.executeOperation(
-      () =>
-        this.coreApi
-          .listNamespacedPod({ namespace: this.namespace, labelSelector })
-          .then((r) => r.items),
-      "Failed to fetch pods by label"
-    );
-  }
-
-  async getPodInfo(podName: string) {
-    return this.executeOperation(
-      () => this.coreApi.readNamespacedPod({ name: podName, namespace: this.namespace }),
-      `Failed to fetch pod info for ${podName}`
-    );
-  }
-
   async getPodLogs(
     podName: string,
     options?: {

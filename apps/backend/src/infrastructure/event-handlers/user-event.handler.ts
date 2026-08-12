@@ -1,7 +1,7 @@
 import {
   UserSuspendedEvent,
   UserUnsuspendedEvent,
-} from "../../domain/events/server-lifecycle.events";
+} from "../../domain/events/user-lifecycle.events";
 import { eventBus } from "../event-bus";
 import { logger } from "../logger";
 
