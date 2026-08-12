@@ -152,3 +152,74 @@ func TestStatelessHasNoDataVolume(t *testing.T) {
 		}
 	}
 }
+
+func TestMinecraftConfigMap(t *testing.T) {
+	cm := MinecraftConfigMap(testServer())
+	if cm.Name != "minecraft-smp-config" {
+		t.Errorf("name = %q", cm.Name)
+	}
+	if cm.Data["jar-type"] != "PAPER" || cm.Data["minecraft-version"] != "1.20.4" {
+		t.Errorf("data = %v", cm.Data)
+	}
+}
+
+func TestMinecraftAPIKeyAndOptionalEnv(t *testing.T) {
+	mc := testServer()
+	mc.Spec.APIKeySecretRef = "minikura-key"
+	mc.Spec.Properties.LevelSeed = "abc"
+	mc.Spec.Properties.LevelType = "flat"
+	falseVal := false
+	mc.Spec.Properties.OnlineMode = &falseVal
+
+	env := minecraftEnv(mc)
+	got, ok := envValue(env, "SEED")
+	if !ok || got != "abc" {
+		t.Errorf("SEED = %q, %v", got, ok)
+	}
+	got, ok = envValue(env, "LEVEL_TYPE")
+	if !ok || got != "flat" {
+		t.Errorf("LEVEL_TYPE = %q, %v", got, ok)
+	}
+	got, ok = envValue(env, "ONLINE_MODE")
+	if !ok || got != "false" {
+		t.Errorf("ONLINE_MODE = %q, %v", got, ok)
+	}
+
+	found := false
+	for _, e := range env {
+		if e.Name == "MINIKURA_API_KEY" {
+			found = true
+			if e.ValueFrom == nil || e.ValueFrom.SecretKeyRef == nil {
+				t.Fatal("expected secret ref for API key")
+			}
+			if e.ValueFrom.SecretKeyRef.Name != "minikura-key" || e.ValueFrom.SecretKeyRef.Key != "api-key" {
+				t.Errorf("secret ref = %+v", e.ValueFrom.SecretKeyRef)
+			}
+		}
+	}
+	if !found {
+		t.Error("MINIKURA_API_KEY missing")
+	}
+}
+
+func TestStatefulSetDefaultStorage(t *testing.T) {
+	mc := testServer()
+	mc.Spec.StorageSize = ""
+	sts, err := MinecraftStatefulSet(mc)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if got := sts.Spec.VolumeClaimTemplates[0].Spec.Resources.Requests.Storage().String(); got != "1Gi" {
+		t.Errorf("storage = %s, want 1Gi", got)
+	}
+}
+
+func TestMinecraftServiceDefaultsToClusterIP(t *testing.T) {
+	svc := MinecraftService(testServer())
+	if svc.Spec.Type != corev1.ServiceTypeClusterIP {
+		t.Errorf("type = %v", svc.Spec.Type)
+	}
+	if svc.Spec.Ports[0].Port != 25565 {
+		t.Errorf("port = %d", svc.Spec.Ports[0].Port)
+	}
+}

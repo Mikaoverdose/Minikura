@@ -136,10 +136,7 @@ func (r *ReverseProxyServerReconciler) updateStatus(ctx context.Context, rp *v1a
 		return err
 	}
 
-	phase := v1alpha1.PhasePending
-	if ready > 0 {
-		phase = v1alpha1.PhaseRunning
-	}
+	phase := phaseFromReady(ready)
 
 	patch := client.MergeFrom(rp.DeepCopy())
 	rp.Status.Phase = phase
@@ -160,21 +157,17 @@ func (r *ReverseProxyServerReconciler) updateStatus(ctx context.Context, rp *v1a
 }
 
 func (r *ReverseProxyServerReconciler) fail(ctx context.Context, rp *v1alpha1.ReverseProxyServer, reason string, cause error) (ctrl.Result, error) {
-	patch := client.MergeFrom(rp.DeepCopy())
-	rp.Status.Phase = v1alpha1.PhaseFailed
-	rp.Status.Message = cause.Error()
-	setCondition(&rp.Status.Conditions, metav1.Condition{
-		Type:               v1alpha1.ConditionReady,
-		Status:             metav1.ConditionFalse,
-		Reason:             reason,
-		Message:            cause.Error(),
-		ObservedGeneration: rp.Generation,
+	return failWithStatus(ctx, r.Client, rp, cause, func() {
+		rp.Status.Phase = v1alpha1.PhaseFailed
+		rp.Status.Message = cause.Error()
+		setCondition(&rp.Status.Conditions, metav1.Condition{
+			Type:               v1alpha1.ConditionReady,
+			Status:             metav1.ConditionFalse,
+			Reason:             reason,
+			Message:            cause.Error(),
+			ObservedGeneration: rp.Generation,
+		})
 	})
-
-	if err := r.Status().Patch(ctx, rp, patch); err != nil {
-		return ctrl.Result{}, fmt.Errorf("%w (status patch failed: %v)", cause, err)
-	}
-	return ctrl.Result{}, cause
 }
 
 func (r *ReverseProxyServerReconciler) proxiesForServer(ctx context.Context, obj client.Object) []reconcile.Request {

@@ -181,5 +181,3 @@ func MinecraftStatefulSet(mc *v1alpha1.MinecraftServer) (*appsv1.StatefulSet, er
 		},
 	}, nil
 }
-
-func ptr[T any](v T) *T { return &v }

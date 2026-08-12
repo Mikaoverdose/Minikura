@@ -1,29 +1,17 @@
 package controller
 
 import (
+	"context"
 	"encoding/json"
 	"testing"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 
 	v1alpha1 "github.com/YuzuZensai/Minikura/operator/api/v1alpha1"
 )
-
-func testScheme(t *testing.T) *runtime.Scheme {
-	t.Helper()
-	s := runtime.NewScheme()
-	if err := clientgoscheme.AddToScheme(s); err != nil {
-		t.Fatalf("add client-go scheme: %v", err)
-	}
-	if err := v1alpha1.AddToScheme(s); err != nil {
-		t.Fatalf("add v1alpha1 scheme: %v", err)
-	}
-	return s
-}
 
 func TestTypedObjectMarshalsWithoutTypeMeta(t *testing.T) {
 	cm := &corev1.ConfigMap{ObjectMeta: metav1.ObjectMeta{Name: "a", Namespace: "b"}}
@@ -87,5 +75,38 @@ func TestApplySetsTypeMeta(t *testing.T) {
 	}
 	if refs[0].Controller == nil || !*refs[0].Controller {
 		t.Error("owner reference should be a controller reference")
+	}
+}
+
+func TestApplyCreatesAndUpdates(t *testing.T) {
+	owner := testMinecraft("smp", v1alpha1.ServerStateful)
+	c := newFakeClient(t, owner)
+	scheme := testScheme(t)
+
+	cm := &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{Name: "minecraft-smp-config", Namespace: owner.Namespace},
+		Data:       map[string]string{"server-type": "STATEFUL"},
+	}
+	if err := apply(context.Background(), c, owner, cm, scheme); err != nil {
+		t.Fatalf("create apply: %v", err)
+	}
+
+	var got corev1.ConfigMap
+	mustGet(t, c, client.ObjectKeyFromObject(cm), &got)
+	if got.Data["server-type"] != "STATEFUL" {
+		t.Errorf("data = %v", got.Data)
+	}
+	if len(got.OwnerReferences) != 1 {
+		t.Fatalf("ownerReferences = %d, want 1", len(got.OwnerReferences))
+	}
+
+	updated := got.DeepCopy()
+	updated.Data["server-type"] = "STATELESS"
+	if err := apply(context.Background(), c, owner, updated, scheme); err != nil {
+		t.Fatalf("update apply: %v", err)
+	}
+	mustGet(t, c, client.ObjectKeyFromObject(cm), &got)
+	if got.Data["server-type"] != "STATELESS" {
+		t.Errorf("updated data = %v", got.Data)
 	}
 }

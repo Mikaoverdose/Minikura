@@ -1,12 +1,24 @@
 package controller
 
 import (
+	"context"
 	"fmt"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	v1alpha1 "github.com/YuzuZensai/Minikura/operator/api/v1alpha1"
 )
+
+func phaseFromReady(ready int32) string {
+	if ready > 0 {
+		return v1alpha1.PhaseRunning
+	}
+	return v1alpha1.PhasePending
+}
 
 func conditionStatus(ok bool) metav1.ConditionStatus {
 	if ok {
@@ -20,6 +32,15 @@ func setCondition(conditions *[]metav1.Condition, c metav1.Condition) {
 		c.Reason = "Unknown"
 	}
 	meta.SetStatusCondition(conditions, c)
+}
+
+func failWithStatus(ctx context.Context, c client.Client, obj client.Object, cause error, mutate func()) (ctrl.Result, error) {
+	patch := client.MergeFrom(obj.DeepCopyObject().(client.Object))
+	mutate()
+	if err := c.Status().Patch(ctx, obj, patch); err != nil {
+		return ctrl.Result{}, fmt.Errorf("%w (status patch failed: %v)", cause, err)
+	}
+	return ctrl.Result{}, cause
 }
 
 func serviceEndpoint(svc *corev1.Service, namespace string) string {

@@ -12,11 +12,15 @@ import (
 )
 
 const (
-	MinecraftImage     = "itzg/minecraft-server"
-	ProxyImage         = "itzg/mc-proxy:latest"
-	ContainerPort      = 25565
-	DefaultHeapPercent = 80
+	MinecraftImage       = "itzg/minecraft-server"
+	ProxyImage           = "itzg/mc-proxy:latest"
+	ContainerPort        = 25565
+	DefaultHeapPercent   = 80
+	DefaultMemoryLimitMB = 2048
+	MinHeapMB            = 256
 )
+
+func ptr[T any](v T) *T { return &v }
 
 func ServiceType(exposure v1alpha1.ServiceExposure, fallback corev1.ServiceType) corev1.ServiceType {
 	switch exposure {
@@ -32,12 +36,15 @@ func ServiceType(exposure v1alpha1.ServiceExposure, fallback corev1.ServiceType)
 }
 
 func HeapMB(limitMB int32, heapPercent int32) string {
+	if limitMB <= 0 {
+		limitMB = DefaultMemoryLimitMB
+	}
 	if heapPercent <= 0 || heapPercent > 100 {
 		heapPercent = DefaultHeapPercent
 	}
 	heap := int64(limitMB) * int64(heapPercent) / 100
-	if heap < 256 {
-		heap = 256
+	if heap < MinHeapMB {
+		heap = MinHeapMB
 	}
 	return fmt.Sprintf("%dM", heap)
 }
@@ -45,7 +52,7 @@ func HeapMB(limitMB int32, heapPercent int32) string {
 func ResourceRequirements(r v1alpha1.Resources) corev1.ResourceRequirements {
 	limitMB := r.MemoryLimitMB
 	if limitMB <= 0 {
-		limitMB = 2048
+		limitMB = DefaultMemoryLimitMB
 	}
 	requestMB := r.MemoryRequestMB
 	if requestMB <= 0 || requestMB > limitMB {
@@ -97,6 +104,7 @@ func UserEnv(base []corev1.EnvVar, extra []v1alpha1.EnvVar) []corev1.EnvVar {
 	for _, e := range extra {
 		if i, ok := index[e.Name]; ok {
 			base[i].Value = e.Value
+			base[i].ValueFrom = nil
 			continue
 		}
 		index[e.Name] = len(base)

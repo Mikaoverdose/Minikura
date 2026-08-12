@@ -2,7 +2,6 @@ package controller
 
 import (
 	"context"
-	"fmt"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -116,10 +115,7 @@ func (r *MinecraftServerReconciler) updateStatus(ctx context.Context, mc *v1alph
 		}
 	}
 
-	phase := v1alpha1.PhasePending
-	if ready > 0 {
-		phase = v1alpha1.PhaseRunning
-	}
+	phase := phaseFromReady(ready)
 
 	endpoint, err := r.endpoint(ctx, mc)
 	if err != nil {
@@ -156,21 +152,17 @@ func (r *MinecraftServerReconciler) endpoint(ctx context.Context, mc *v1alpha1.M
 }
 
 func (r *MinecraftServerReconciler) fail(ctx context.Context, mc *v1alpha1.MinecraftServer, reason string, cause error) (ctrl.Result, error) {
-	patch := client.MergeFrom(mc.DeepCopy())
-	mc.Status.Phase = v1alpha1.PhaseFailed
-	mc.Status.Message = cause.Error()
-	setCondition(&mc.Status.Conditions, metav1.Condition{
-		Type:               v1alpha1.ConditionReady,
-		Status:             metav1.ConditionFalse,
-		Reason:             reason,
-		Message:            cause.Error(),
-		ObservedGeneration: mc.Generation,
+	return failWithStatus(ctx, r.Client, mc, cause, func() {
+		mc.Status.Phase = v1alpha1.PhaseFailed
+		mc.Status.Message = cause.Error()
+		setCondition(&mc.Status.Conditions, metav1.Condition{
+			Type:               v1alpha1.ConditionReady,
+			Status:             metav1.ConditionFalse,
+			Reason:             reason,
+			Message:            cause.Error(),
+			ObservedGeneration: mc.Generation,
+		})
 	})
-
-	if err := r.Status().Patch(ctx, mc, patch); err != nil {
-		return ctrl.Result{}, fmt.Errorf("%w (status patch failed: %v)", cause, err)
-	}
-	return ctrl.Result{}, cause
 }
 
 func (r *MinecraftServerReconciler) SetupWithManager(mgr ctrl.Manager) error {

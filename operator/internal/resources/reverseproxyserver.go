@@ -93,7 +93,7 @@ func ProxyDeployment(rp *v1alpha1.ReverseProxyServer) *appsv1.Deployment {
 							{Name: "config", MountPath: "/config"},
 						},
 						ReadinessProbe: TCPProbe(30, rp.Spec.ListenPort),
-						Resources: ResourceRequirements(rp.Spec.Resources),
+						Resources:      ResourceRequirements(rp.Spec.Resources),
 					}},
 					Volumes: []corev1.Volume{{
 						Name: "config",
