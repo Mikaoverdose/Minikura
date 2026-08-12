@@ -46,8 +46,8 @@ func ProxyService(rp *v1alpha1.ReverseProxyServer) *corev1.Service {
 
 func proxyEnv(rp *v1alpha1.ReverseProxyServer) []corev1.EnvVar {
 	env := []corev1.EnvVar{
-		{Name: "EULA", Value: "TRUE"},
 		{Name: "TYPE", Value: string(rp.Spec.Type)},
+		{Name: "NETWORKADDRESS_CACHE_TTL", Value: "30"},
 		{Name: "MINIKURA_EXTERNAL_ADDRESS", Value: rp.Spec.ExternalAddress},
 	}
 
@@ -83,7 +83,7 @@ func ProxyDeployment(rp *v1alpha1.ReverseProxyServer) *appsv1.Deployment {
 				Spec: corev1.PodSpec{
 					Containers: []corev1.Container{{
 						Name:  "proxy",
-						Image: MinecraftImage,
+						Image: ProxyImage,
 						Ports: []corev1.ContainerPort{{
 							Name:          "minecraft",
 							ContainerPort: rp.Spec.ListenPort,

@@ -20,10 +20,11 @@
     "db:studio": "bun --filter @minikura/db studio",
     "db:push": "bun --filter @minikura/db push",
     "db:reset": "bun --filter @minikura/db reset",
-    "k8s:dev": "bun --filter @minikura/k8s-operator dev",
-    "k8s:build": "bun --filter @minikura/k8s-operator build",
-    "k8s:start": "bun --filter @minikura/k8s-operator start",
-    "k8s:crd": "bun --filter @minikura/k8s-operator apply-crds",
+    "operator:dev": "make -C operator run",
+    "operator:build": "make -C operator build",
+    "operator:test": "make -C operator test",
+    "operator:crds": "make -C operator install-crds",
+    "operator:deploy": "make -C operator deploy",
     "setup": "bash scripts/install.sh"
   },
   "devDependencies": {

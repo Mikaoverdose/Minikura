@@ -16,6 +16,9 @@ import { terminalRoutes } from "./routes/terminal";
 import { userRoutes } from "./routes/users";
 
 import "./infrastructure/event-handlers";
+import { operatorResourceSync } from "./application/di-container";
+
+operatorResourceSync.start();
 
 const app = new Elysia({ adapter: node() })
   .use(errorHandler)

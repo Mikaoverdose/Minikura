@@ -9,6 +9,7 @@ import type {
   ReverseProxyRepository,
   ReverseProxyUpdateInput,
 } from "../../domain/repositories/reverse-proxy.repository";
+import type { OperatorResourceSync } from "../../services/operator-resource-sync";
 import type { IReverseProxyService } from "../interfaces/reverse-proxy.service.interface";
 import { BaseCrudService } from "./base-crud.service";
 
@@ -26,7 +27,10 @@ export class ReverseProxyService
   >
   implements IReverseProxyService
 {
-  constructor(reverseProxyRepo: ReverseProxyRepository) {
+  constructor(
+    reverseProxyRepo: ReverseProxyRepository,
+    private operatorResourceSync: OperatorResourceSync
+  ) {
     super(
       reverseProxyRepo,
       {
@@ -64,5 +68,15 @@ export class ReverseProxyService
 
   deleteReverseProxy(id: string) {
     return this.delete(id);
+  }
+
+  override async setEnvVariable(proxyId: string, key: string, value: string): Promise<void> {
+    await super.setEnvVariable(proxyId, key, value);
+    await this.operatorResourceSync.syncReverseProxyById(proxyId);
+  }
+
+  override async deleteEnvVariable(proxyId: string, key: string): Promise<void> {
+    await super.deleteEnvVariable(proxyId, key);
+    await this.operatorResourceSync.syncReverseProxyById(proxyId);
   }
 }

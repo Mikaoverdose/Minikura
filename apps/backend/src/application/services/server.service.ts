@@ -10,6 +10,10 @@ import type {
   ServerUpdateInput,
 } from "../../domain/repositories/server.repository";
 import type { K8sService } from "../../services/k8s";
+import {
+  type OperatorResourceSync,
+  operatorResourceName,
+} from "../../services/operator-resource-sync";
 import type { IServerService } from "../interfaces/server.service.interface";
 import { BaseCrudService } from "./base-crud.service";
 
@@ -29,7 +33,8 @@ export class ServerService
 {
   constructor(
     serverRepo: ServerRepository,
-    private k8sService: K8sService
+    private k8sService: K8sService,
+    private operatorResourceSync: OperatorResourceSync
   ) {
     super(
       serverRepo,
@@ -70,9 +75,19 @@ export class ServerService
     return this.delete(id);
   }
 
+  override async setEnvVariable(serverId: string, key: string, value: string): Promise<void> {
+    await super.setEnvVariable(serverId, key, value);
+    await this.operatorResourceSync.syncServerById(serverId);
+  }
+
+  override async deleteEnvVariable(serverId: string, key: string): Promise<void> {
+    await super.deleteEnvVariable(serverId, key);
+    await this.operatorResourceSync.syncServerById(serverId);
+  }
+
   async getConnectionInfo(serverId: string) {
     await this.getServerById(serverId);
-    const serviceName = `minecraft-${serverId}`;
+    const serviceName = `minecraft-${operatorResourceName(serverId)}`;
     return this.k8sService.getServerConnectionInfo(serviceName);
   }
 }

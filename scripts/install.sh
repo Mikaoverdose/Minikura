@@ -35,15 +35,21 @@ echo "-> Creating namespace: $NAMESPACE"
 kubectl create namespace $NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
 echo ""
 
-# Apply RBAC (single SA for both backend and operator)
-echo "-> Setting up RBAC (minikura-operator ServiceAccount)"
-kubectl apply -f "$PROJECT_ROOT/k8s/rbac/operator-rbac.yaml"
-echo "[OK] RBAC configured"
+# Apply CRDs and operator RBAC
+echo "-> Installing operator CRDs"
+make -C "$PROJECT_ROOT/operator" install-crds
+echo "[OK] CRDs installed"
 echo ""
 
-# CRD info
-echo "-> Custom Resource Definitions"
-echo "  CRDs are auto-created when the operator starts (ENABLE_CRD_REFLECTION=true)"
+echo "-> Setting up Go operator RBAC"
+kubectl apply -f "$PROJECT_ROOT/operator/config/rbac/role.yaml"
+kubectl apply -n "$NAMESPACE" -f "$PROJECT_ROOT/operator/config/rbac/service_account.yaml"
+kubectl apply -n "$NAMESPACE" -f "$PROJECT_ROOT/operator/config/rbac/backend.yaml"
+kubectl patch clusterrolebinding minikura-operator-rolebinding --type=json \
+    -p="[{\"op\":\"replace\",\"path\":\"/subjects/0/namespace\",\"value\":\"$NAMESPACE\"}]"
+kubectl patch clusterrolebinding minikura-backend-operator-resources --type=json \
+    -p="[{\"op\":\"replace\",\"path\":\"/subjects/0/namespace\",\"value\":\"$NAMESPACE\"}]"
+echo "[OK] Operator RBAC configured"
 echo ""
 
 echo "╔════════════════════════════════════════════════╗"
@@ -57,5 +63,5 @@ echo "  [OK] ClusterRole + ClusterRoleBinding"
 echo ""
 echo "Next steps:"
 echo "  bun run dev      - Start backend + web"
-echo "  bun run k8s:dev  - Start K8s operator"
+echo "  bun run operator:dev - Start Go operator"
 echo ""

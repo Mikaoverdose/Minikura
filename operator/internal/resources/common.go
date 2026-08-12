@@ -13,6 +13,7 @@ import (
 
 const (
 	MinecraftImage     = "itzg/minecraft-server"
+	ProxyImage         = "itzg/mc-proxy:latest"
 	ContainerPort      = 25565
 	DefaultHeapPercent = 80
 )

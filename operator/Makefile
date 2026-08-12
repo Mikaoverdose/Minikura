@@ -1,5 +1,6 @@
 IMG ?= minikura-operator:latest
 NAMESPACE ?= minikura
+CONTROLLER_GEN_VERSION ?= v0.20.0
 CONTROLLER_GEN ?= $(shell go env GOPATH)/bin/controller-gen
 
 .PHONY: all
@@ -7,7 +8,7 @@ all: generate manifests fmt vet test build
 
 .PHONY: controller-gen
 controller-gen:
-	@test -x $(CONTROLLER_GEN) || go install sigs.k8s.io/controller-tools/cmd/controller-gen@latest
+	@test -x $(CONTROLLER_GEN) || go install sigs.k8s.io/controller-tools/cmd/controller-gen@$(CONTROLLER_GEN_VERSION)
 
 .PHONY: generate
 generate: controller-gen
@@ -52,6 +53,11 @@ uninstall-crds:
 
 .PHONY: deploy
 deploy: manifests
+	kubectl create namespace $(NAMESPACE) --dry-run=client -o yaml | kubectl apply -f -
 	kubectl apply -f config/crd
-	kubectl apply -n $(NAMESPACE) -f config/rbac
-	kubectl apply -n $(NAMESPACE) -f config/manager
+	kubectl apply -f config/rbac/role.yaml
+	kubectl apply -n $(NAMESPACE) -f config/rbac/service_account.yaml
+	kubectl apply -n $(NAMESPACE) -f config/rbac/backend.yaml
+	kubectl patch clusterrolebinding minikura-operator-rolebinding --type=json -p='[{"op":"replace","path":"/subjects/0/namespace","value":"$(NAMESPACE)"}]'
+	kubectl patch clusterrolebinding minikura-backend-operator-resources --type=json -p='[{"op":"replace","path":"/subjects/0/namespace","value":"$(NAMESPACE)"}]'
+	sed 's|minikura-operator:latest|$(IMG)|' config/manager/deployment.yaml | kubectl apply -n $(NAMESPACE) -f -

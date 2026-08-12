@@ -35,7 +35,6 @@ services:
       - WEB_URL=http://localhost:3001
       - API_URL=http://localhost:3000
       - KUBERNETES_NAMESPACE=minikura
-      - ENABLE_CRD_REFLECTION=true
 
   db:
     image: postgres:17

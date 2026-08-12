@@ -92,8 +92,8 @@ echo "==> Creating minikura namespace..."
 kubectl create namespace minikura --dry-run=client -o yaml | kubectl apply -f - 2>/dev/null || true
 
 echo "==> Installing CRDs..."
-kubectl apply -f /workspace/operator/config/crd 2>/dev/null \
-    || echo "[WARN] CRD install failed; run 'make install-crds' in operator/"
+make -C /workspace/operator install-crds 2>/dev/null \
+    || echo "[WARN] CRD install failed; run 'bun run operator:crds'"
 
 # Install dependencies
 echo "==> Installing dependencies..."

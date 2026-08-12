@@ -1,3 +1,4 @@
+import "./reverse-proxy-event.handler";
 import "./server-event.handler";
 import "./user-event.handler";
 

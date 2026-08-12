@@ -50,8 +50,36 @@ func (r *ReverseProxyServerReconciler) Reconcile(ctx context.Context, req ctrl.R
 	if err := apply(ctx, r.Client, &rp, resources.ProxyDeployment(&rp), r.Scheme); err != nil {
 		return r.fail(ctx, &rp, "DeploymentFailed", err)
 	}
+	if err := r.pruneStaleResources(ctx, &rp); err != nil {
+		return r.fail(ctx, &rp, "PruneFailed", err)
+	}
 
 	return ctrl.Result{}, r.updateStatus(ctx, &rp)
+}
+
+func (r *ReverseProxyServerReconciler) pruneStaleResources(ctx context.Context, rp *v1alpha1.ReverseProxyServer) error {
+	current := resources.ProxyName(rp.Spec.Type, rp.Name)
+	for _, kind := range []v1alpha1.ProxyKind{v1alpha1.ProxyVelocity, v1alpha1.ProxyBungeeCord} {
+		name := resources.ProxyName(kind, rp.Name)
+		if name == current {
+			continue
+		}
+		for _, obj := range []client.Object{&appsv1.Deployment{}, &corev1.Service{}, &corev1.ConfigMap{}} {
+			key := client.ObjectKey{Name: name, Namespace: rp.Namespace}
+			if err := r.Get(ctx, key, obj); err != nil {
+				if apierrors.IsNotFound(err) {
+					continue
+				}
+				return err
+			}
+			if metav1.IsControlledBy(obj, rp) {
+				if err := r.Delete(ctx, obj); err != nil && !apierrors.IsNotFound(err) {
+					return err
+				}
+			}
+		}
+	}
+	return nil
 }
 
 func (r *ReverseProxyServerReconciler) backends(ctx context.Context, rp *v1alpha1.ReverseProxyServer) ([]string, error) {
