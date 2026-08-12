@@ -161,7 +161,7 @@ export const terminalRoutes = new Elysia({ prefix: "/terminal" }).ws("/exec", {
               })
             );
           } catch (logError) {
-            logger.error("Failed to fetch historical logs:", logError);
+            logger.error({ err: logError }, "Failed to fetch historical logs");
             ws.send(
               JSON.stringify({
                 type: "ready",
@@ -202,17 +202,15 @@ export const terminalRoutes = new Elysia({ prefix: "/terminal" }).ws("/exec", {
             return;
           } else {
             logger.debug(
-              "Unknown data type:",
-              typeof data,
-              "constructor:",
-              data?.constructor?.name
+              { dataType: typeof data, constructor: data?.constructor?.name },
+              "Unknown data type"
             );
             buffer = new Uint8Array(data);
           }
 
           processBuffer(buffer);
         } catch (err) {
-          logger.error("Error processing Kubernetes message:", err);
+          logger.error({ err }, "Error processing Kubernetes message");
         }
       };
 
@@ -227,13 +225,13 @@ export const terminalRoutes = new Elysia({ prefix: "/terminal" }).ws("/exec", {
         if (channel === 1 || channel === 2) {
           ws.send(JSON.stringify({ type: "output", data: message }));
         } else if (channel === 3) {
-          logger.error("Kubernetes error channel:", message);
+          logger.error({ message }, "Kubernetes error channel");
           ws.send(JSON.stringify({ type: "error", data: message }));
         }
       }
 
       k8sWs.onerror = (error: Event) => {
-        logger.error("Kubernetes WebSocket error:", error);
+        logger.error({ err: error }, "Kubernetes WebSocket error");
         const message = getErrorMessage(error);
         ws.send(
           JSON.stringify({
@@ -254,9 +252,9 @@ export const terminalRoutes = new Elysia({ prefix: "/terminal" }).ws("/exec", {
         ws.close();
       };
     } catch (error: unknown) {
-      logger.error("Error setting up terminal:", error);
+      logger.error({ err: error }, "Error setting up terminal");
       if (error instanceof Error) {
-        logger.error("Error stack:", error.stack);
+        logger.error({ stack: error.stack }, "Error stack");
       }
       ws.send(
         JSON.stringify({
@@ -278,12 +276,12 @@ export const terminalRoutes = new Elysia({ prefix: "/terminal" }).ws("/exec", {
       const k8sWs = ws.data.k8sWs;
 
       if (!k8sWs || k8sWs.readyState !== WebSocket.OPEN) {
-        logger.error("Kubernetes WebSocket not ready, state:", k8sWs?.readyState);
+        logger.error({ readyState: k8sWs?.readyState }, "Kubernetes WebSocket not ready");
         return;
       }
 
       if (data.type === "input") {
-        logger.debug("Sending input to k8s:", data.data);
+        logger.debug({ input: data.data }, "Sending input to k8s");
         const encoder = new TextEncoder();
         const textData = encoder.encode(data.data);
         const buffer = new Uint8Array(1 + textData.length);
@@ -303,7 +301,7 @@ export const terminalRoutes = new Elysia({ prefix: "/terminal" }).ws("/exec", {
         k8sWs.send(buffer.buffer);
       }
     } catch (error: unknown) {
-      logger.error("Error handling terminal message:", error);
+      logger.error({ err: error }, "Error handling terminal message");
       ws.send(
         JSON.stringify({
           type: "error",
@@ -328,7 +326,7 @@ function parseTerminalMessage(message: unknown): TerminalMessage | null {
       const parsed = JSON.parse(message) as unknown;
       return isTerminalMessage(parsed) ? parsed : null;
     } catch {
-      logger.error("Failed to parse message as JSON:", message);
+      logger.error({ message }, "Failed to parse message as JSON");
       return null;
     }
   }
