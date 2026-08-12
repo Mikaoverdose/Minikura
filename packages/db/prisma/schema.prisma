@@ -104,9 +104,9 @@ model ReverseProxyServer {
   external_address String
   external_port    Int
   listen_port      Int                         @default(25565)
-  memory           Int                         @default(512) // Memory in MB
-  cpu_request      String?                     @default("250m") // CPU request, e.g., "250m", "1"
-  cpu_limit        String?                     @default("500m") // CPU limit, e.g., "500m", "2"
+  memory           Int                         @default(512) // MB
+  cpu_request      String?                     @default("250m")
+  cpu_limit        String?                     @default("500m")
   service_type     ServiceType                 @default(LOAD_BALANCER)
   node_port        Int?
   api_key          String                      @unique
@@ -130,19 +130,19 @@ model Server {
   type                 ServerType
   description          String?
   listen_port          Int                         @default(25565)
-  memory               Int                         @default(2048) // Memory limit in MB
-  memory_request       Int                         @default(1024) // Memory request in MB
-  cpu_request          String?                     @default("500m") // CPU request, e.g., "500m", "1"
-  cpu_limit            String?                     @default("2") // CPU limit, e.g., "2", "500m"
+  memory               Int                         @default(2048) // MB limit
+  memory_request       Int                         @default(1024) // MB request
+  cpu_request          String?                     @default("500m")
+  cpu_limit            String?                     @default("2")
   service_type         ServiceType                 @default(CLUSTER_IP)
   node_port            Int?
   env_variables        CustomEnvironmentVariable[] @relation("ServerEnvVars")
   api_key              String                      @unique
 
   jar_type             MinecraftServerJarType      @default(VANILLA)
-  minecraft_version    String                      @default("LATEST") // e.g., "LATEST", "1.20.4", "SNAPSHOT"
+  minecraft_version    String                      @default("LATEST")
 
-  jvm_opts             String?                     // Custom JVM options
+  jvm_opts             String?
   use_aikar_flags      Boolean                     @default(false)
   use_meowice_flags    Boolean                     @default(false)
 
@@ -153,7 +153,7 @@ model Server {
   online_mode          Boolean                     @default(true)
   motd                 String?
   level_seed           String?
-  level_type           String?                     // default, flat, largeBiomes, amplified
+  level_type           String?                     // default | flat | largeBiomes | amplified
 
   created_at           DateTime                    @default(now())
   updated_at           DateTime                    @updatedAt

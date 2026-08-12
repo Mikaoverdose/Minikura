@@ -1,15 +1,3 @@
 # @minikura/db
 
-To install dependencies:
-
-```bash
-bun install
-```
-
-To run:
-
-```bash
-bun run src/index.ts
-```
-
-This project was created using `bun init` in bun v1.1.28. [Bun](https://bun.sh) is a fast all-in-one JavaScript runtime.
+Prisma schema and client. From the repo root: `bun run db:generate`, `bun run db:push`, `bun run db:studio`.

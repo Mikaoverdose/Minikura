@@ -1,6 +1,4 @@
 #!/bin/bash
-# Minikura Installer
-
 set -e
 
 NAMESPACE="${KUBERNETES_NAMESPACE:-minikura}"
@@ -12,7 +10,6 @@ echo "║       Minikura Kubernetes Installer            ║"
 echo "╚════════════════════════════════════════════════╝"
 echo ""
 
-# Check prerequisites
 echo "-> Checking prerequisites..."
 if ! command -v kubectl &> /dev/null; then
     echo "[WARN] kubectl not found. Skipping k8s setup."
@@ -30,12 +27,10 @@ echo "[OK] kubectl found"
 echo "[OK] Connected to Kubernetes cluster"
 echo ""
 
-# Create namespace
 echo "-> Creating namespace: $NAMESPACE"
 kubectl create namespace $NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
 echo ""
 
-# Apply CRDs and operator RBAC
 echo "-> Installing operator CRDs"
 make -C "$PROJECT_ROOT/operator" install-crds
 echo "[OK] CRDs installed"
@@ -62,6 +57,5 @@ echo "  [OK] ServiceAccount: minikura-operator"
 echo "  [OK] ClusterRole + ClusterRoleBinding"
 echo ""
 echo "Next steps:"
-echo "  bun run dev      - Start backend + web"
-echo "  bun run operator:dev - Start Go operator"
+echo "  bun run dev - Start backend, web, and Go operator"
 echo ""
