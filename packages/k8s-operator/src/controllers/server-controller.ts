@@ -85,7 +85,8 @@ export class ServerController extends BaseController {
       oldServer.type !== newServer.type ||
       oldServer.listen_port !== newServer.listen_port ||
       oldServer.description !== newServer.description ||
-      oldServer.service_type !== newServer.service_type;
+      oldServer.service_type !== newServer.service_type ||
+      oldServer.memory !== newServer.memory;
 
     if (basicPropsChanged) return true;
 

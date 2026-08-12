@@ -101,7 +101,9 @@ export class ReverseProxyController extends BaseController {
       oldProxy.external_port !== newProxy.external_port ||
       oldProxy.listen_port !== newProxy.listen_port ||
       oldProxy.description !== newProxy.description ||
-      oldProxy.service_type !== newProxy.service_type;
+      oldProxy.service_type !== newProxy.service_type ||
+      oldProxy.memory !== newProxy.memory ||
+      oldProxy.type !== newProxy.type;
 
     if (basicPropsChanged) return true;
 
