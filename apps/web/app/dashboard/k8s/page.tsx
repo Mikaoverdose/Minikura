@@ -5,221 +5,175 @@ import type {
   DeploymentInfo,
   K8sConfigMapSummary,
   K8sServiceSummary,
-  K8sStatus,
   PodInfo,
   StatefulSetInfo,
 } from "@minikura/api";
-import { AlertCircle, CheckCircle2, XCircle } from "lucide-react";
-import { useEffect, useState } from "react";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
+import { AlertCircle, CheckCircle2, RefreshCw, XCircle } from "lucide-react";
+import { K8sPhaseBadge } from "@/components/k8s/k8s-phase-badge";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+  type K8sResourceColumn,
+  K8sResourceTableCard,
+} from "@/components/k8s/k8s-resource-table-card";
+import { PageHeader, PageShell, StatePanel } from "@/components/page-layout";
+import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { api } from "@/lib/api-client";
+import { useK8sResources } from "@/hooks/use-k8s-resources";
+
+const secondaryCell = "text-sm text-muted-foreground";
+
+const podColumns = [
+  { header: "Name", render: (pod) => pod.name, className: "font-medium" },
+  { header: "Status", render: (pod) => <K8sPhaseBadge phase={pod.status} /> },
+  { header: "Ready", render: (pod) => pod.ready },
+  { header: "Restarts", render: (pod) => pod.restarts },
+  { header: "Node", render: (pod) => pod.nodeName || "-", className: secondaryCell },
+  { header: "Age", render: (pod) => pod.age, className: secondaryCell },
+] satisfies readonly K8sResourceColumn<PodInfo>[];
+
+const deploymentColumns = [
+  { header: "Name", render: (deployment) => deployment.name, className: "font-medium" },
+  { header: "Ready", render: (deployment) => deployment.ready },
+  {
+    header: "Up-to-date",
+    render: (deployment) => deployment.upToDate ?? deployment.updated,
+  },
+  { header: "Available", render: (deployment) => deployment.available ?? 0 },
+  { header: "Age", render: (deployment) => deployment.age, className: secondaryCell },
+] satisfies readonly K8sResourceColumn<DeploymentInfo>[];
+
+const statefulSetColumns = [
+  { header: "Name", render: (statefulSet) => statefulSet.name, className: "font-medium" },
+  { header: "Ready", render: (statefulSet) => statefulSet.ready },
+  { header: "Desired", render: (statefulSet) => statefulSet.desired },
+  { header: "Current", render: (statefulSet) => statefulSet.current },
+  { header: "Age", render: (statefulSet) => statefulSet.age, className: secondaryCell },
+] satisfies readonly K8sResourceColumn<StatefulSetInfo>[];
+
+const serviceColumns = [
+  { header: "Name", render: (service) => service.name, className: "font-medium" },
+  {
+    header: "Type",
+    render: (service) => <Badge variant="outline">{service.type}</Badge>,
+  },
+  {
+    header: "Cluster IP",
+    render: (service) => service.clusterIP,
+    className: secondaryCell,
+  },
+  {
+    header: "External IP",
+    render: (service) => service.externalIP,
+    className: secondaryCell,
+  },
+  { header: "Ports", render: (service) => service.ports, className: secondaryCell },
+  { header: "Age", render: (service) => service.age, className: secondaryCell },
+] satisfies readonly K8sResourceColumn<K8sServiceSummary>[];
+
+const configMapColumns = [
+  { header: "Name", render: (configMap) => configMap.name, className: "font-medium" },
+  { header: "Data Keys", render: (configMap) => configMap.data },
+  { header: "Age", render: (configMap) => configMap.age, className: secondaryCell },
+] satisfies readonly K8sResourceColumn<K8sConfigMapSummary>[];
+
+const customResourceColumns = [
+  { header: "Name", render: (resource) => resource.name, className: "font-medium" },
+  {
+    header: "Status",
+    render: (resource) => <K8sPhaseBadge phase={resource.status?.phase} />,
+  },
+  { header: "Age", render: (resource) => resource.age, className: secondaryCell },
+] satisfies readonly K8sResourceColumn<CustomResourceSummary>[];
 
 export default function K8sResourcesPage() {
-  const [status, setStatus] = useState<K8sStatus | null>(null);
-  const [pods, setPods] = useState<PodInfo[]>([]);
-  const [deployments, setDeployments] = useState<DeploymentInfo[]>([]);
-  const [statefulSets, setStatefulSets] = useState<StatefulSetInfo[]>([]);
-  const [services, setServices] = useState<K8sServiceSummary[]>([]);
-  const [configMaps, setConfigMaps] = useState<K8sConfigMapSummary[]>([]);
-  const [minecraftServers, setMinecraftServers] = useState<CustomResourceSummary[]>([]);
-  const [reverseProxyServers, setReverseProxyServers] = useState<CustomResourceSummary[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const {
+    status,
+    pods,
+    deployments,
+    statefulSets,
+    services,
+    configMaps,
+    minecraftServers,
+    reverseProxyServers,
+    initialLoading,
+    refreshing,
+    error,
+  } = useK8sResources();
 
-  const fetchData = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const [
-        statusRes,
-        podsRes,
-        deploymentsRes,
-        statefulSetsRes,
-        servicesRes,
-        configMapsRes,
-        minecraftServersRes,
-        reverseProxyServersRes,
-      ] = await Promise.allSettled([
-        api.api.k8s.status.get(),
-        api.api.k8s.pods.get(),
-        api.api.k8s.deployments.get(),
-        api.api.k8s.statefulsets.get(),
-        api.api.k8s.services.get(),
-        api.api.k8s.configmaps.get(),
-        api.api.k8s["minecraft-servers"].get(),
-        api.api.k8s["reverse-proxy-servers"].get(),
-      ]);
-
-      if (statusRes.status === "fulfilled" && statusRes.value.data) {
-        setStatus(statusRes.value.data as K8sStatus);
+  const pageHeader = (
+    <PageHeader
+      eyebrow="Kubernetes"
+      title="Resources"
+      description="Inspect workload, networking, configuration, and custom resources."
+      actions={
+        status?.initialized ? (
+          <div className="flex items-center gap-3 border border-border bg-card px-4 py-3">
+            <CheckCircle2 className="size-5 text-primary" />
+            <div>
+              <p className="font-mono text-[9px] font-bold uppercase tracking-wider text-muted-foreground">
+                Cluster link
+              </p>
+              <span className="text-sm font-bold">Connected</span>
+            </div>
+            {refreshing && <RefreshCw className="ml-2 size-3 animate-spin text-muted-foreground" />}
+          </div>
+        ) : undefined
       }
+    />
+  );
 
-      if (podsRes.status === "fulfilled" && podsRes.value.data) {
-        setPods(podsRes.value.data as PodInfo[]);
-      }
-
-      if (deploymentsRes.status === "fulfilled" && deploymentsRes.value.data) {
-        setDeployments(deploymentsRes.value.data as DeploymentInfo[]);
-      }
-
-      if (statefulSetsRes.status === "fulfilled" && statefulSetsRes.value.data) {
-        setStatefulSets(statefulSetsRes.value.data as StatefulSetInfo[]);
-      }
-
-      if (servicesRes.status === "fulfilled" && servicesRes.value.data) {
-        setServices(servicesRes.value.data as K8sServiceSummary[]);
-      }
-
-      if (configMapsRes.status === "fulfilled" && configMapsRes.value.data) {
-        setConfigMaps(configMapsRes.value.data as K8sConfigMapSummary[]);
-      }
-
-      if (minecraftServersRes.status === "fulfilled" && minecraftServersRes.value.data) {
-        setMinecraftServers(minecraftServersRes.value.data as CustomResourceSummary[]);
-      }
-
-      if (reverseProxyServersRes.status === "fulfilled" && reverseProxyServersRes.value.data) {
-        setReverseProxyServers(reverseProxyServersRes.value.data as CustomResourceSummary[]);
-      }
-    } catch (err: unknown) {
-      const errorMessage =
-        err instanceof Error ? err.message : "Failed to fetch Kubernetes resources";
-      setError(errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // biome-ignore lint/correctness/useExhaustiveDependencies: fetchData intentionally omitted to avoid infinite loop
-  useEffect(() => {
-    fetchData();
-    const interval = setInterval(fetchData, 30000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const getStatusBadge = (phase: string) => {
-    const variants: Record<
-      string,
-      {
-        icon: React.ComponentType<{ className?: string }>;
-        variant: "default" | "destructive" | "secondary";
-      }
-    > = {
-      Running: { icon: CheckCircle2, variant: "default" },
-      Succeeded: { icon: CheckCircle2, variant: "default" },
-      Failed: { icon: XCircle, variant: "destructive" },
-      Pending: { icon: AlertCircle, variant: "secondary" },
-      Unknown: { icon: AlertCircle, variant: "secondary" },
-    };
-
-    const status = variants[phase] || variants.Unknown;
-    const Icon = status.icon;
-
+  if (initialLoading && !status) {
     return (
-      <Badge variant={status.variant}>
-        <Icon className="mr-1 h-3 w-3" />
-        {phase}
-      </Badge>
-    );
-  };
-
-  if (loading && !status) {
-    return (
-      <div className="space-y-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Kubernetes Resources</h1>
-          <p className="text-muted-foreground">View and monitor your Kubernetes resources</p>
-        </div>
-        <Card>
-          <CardHeader>
-            <Skeleton className="h-6 w-48" />
-          </CardHeader>
-          <CardContent>
-            <Skeleton className="h-40 w-full" />
-          </CardContent>
-        </Card>
-      </div>
+      <PageShell>
+        {pageHeader}
+        <StatePanel loading title="Loading Kubernetes resources..." className="h-64" />
+      </PageShell>
     );
   }
 
   if (error) {
     return (
-      <div className="space-y-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Kubernetes Resources</h1>
-          <p className="text-muted-foreground">View and monitor your Kubernetes resources</p>
-        </div>
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-destructive flex items-center gap-2">
-              <XCircle className="h-5 w-5" />
-              Error
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">{error}</p>
-          </CardContent>
-        </Card>
-      </div>
+      <PageShell>
+        {pageHeader}
+        <StatePanel
+          title="Unable to load Kubernetes resources"
+          description={error}
+          icon={<XCircle className="size-6" />}
+          tone="error"
+        />
+      </PageShell>
     );
   }
 
   if (!status?.initialized) {
     return (
-      <div className="space-y-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Kubernetes Resources</h1>
-          <p className="text-muted-foreground">View and monitor your Kubernetes resources</p>
-        </div>
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <AlertCircle className="h-5 w-5 text-yellow-500" />
-              Kubernetes Not Connected
-            </CardTitle>
-            <CardDescription>
-              The Kubernetes client is not initialized. Please ensure the operator is running with
-              proper Kubernetes configuration.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              Set{" "}
-              <code className="bg-muted px-1 py-0.5 rounded">KUBERNETES_SKIP_TLS_VERIFY=true</code>{" "}
-              if using self-signed certificates.
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+      <PageShell>
+        {pageHeader}
+        <StatePanel
+          title="Kubernetes not connected"
+          icon={<AlertCircle className="size-6 text-yellow-500" />}
+          description={
+            <>
+              <p>Ensure the operator is running with a valid Kubernetes configuration.</p>
+              <p className="mt-2">
+                Set{" "}
+                <code className="rounded bg-muted px-1 py-0.5">
+                  KUBERNETES_SKIP_TLS_VERIFY=true
+                </code>{" "}
+                when using self-signed certificates.
+              </p>
+            </>
+          }
+        />
+      </PageShell>
     );
   }
 
   return (
-    <div className="space-y-4">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Kubernetes Resources</h1>
-        <p className="text-muted-foreground">View and monitor your Kubernetes resources</p>
-      </div>
-
-      <div className="flex items-center gap-2">
-        <CheckCircle2 className="h-5 w-5 text-green-500" />
-        <span className="text-sm font-medium">Connected to Kubernetes</span>
-      </div>
+    <PageShell>
+      {pageHeader}
 
       <Tabs defaultValue="pods" className="space-y-4">
-        <TabsList>
+        <TabsList className="w-full justify-start overflow-x-auto">
           <TabsTrigger value="pods">Pods ({pods.length})</TabsTrigger>
           <TabsTrigger value="deployments">Deployments ({deployments.length})</TabsTrigger>
           <TabsTrigger value="statefulsets">StatefulSets ({statefulSets.length})</TabsTrigger>
@@ -232,302 +186,75 @@ export default function K8sResourcesPage() {
         </TabsList>
 
         <TabsContent value="pods" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Pods</CardTitle>
-              <CardDescription>Running pods in the minikura namespace</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {pods.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No pods found</p>
-              ) : (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Ready</TableHead>
-                        <TableHead>Restarts</TableHead>
-                        <TableHead>Node</TableHead>
-                        <TableHead>Age</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {pods.map((pod) => (
-                        <TableRow key={pod.name}>
-                          <TableCell className="font-medium">{pod.name}</TableCell>
-                          <TableCell>{getStatusBadge(pod.status)}</TableCell>
-                          <TableCell>{pod.ready}</TableCell>
-                          <TableCell>{pod.restarts}</TableCell>
-                          <TableCell className="text-sm text-muted-foreground">
-                            {pod.nodeName || "-"}
-                          </TableCell>
-                          <TableCell className="text-sm text-muted-foreground">{pod.age}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <K8sResourceTableCard
+            title="Pods"
+            description="Running pods in the minikura namespace"
+            emptyMessage="No pods found"
+            resources={pods}
+            columns={podColumns}
+          />
         </TabsContent>
 
         <TabsContent value="deployments" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Deployments</CardTitle>
-              <CardDescription>Deployments in the minikura namespace</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {deployments.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No deployments found</p>
-              ) : (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Ready</TableHead>
-                        <TableHead>Up-to-date</TableHead>
-                        <TableHead>Available</TableHead>
-                        <TableHead>Age</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {deployments.map((deployment) => (
-                        <TableRow key={deployment.name}>
-                          <TableCell className="font-medium">{deployment.name}</TableCell>
-                          <TableCell>{deployment.ready}</TableCell>
-                          <TableCell>{deployment.upToDate ?? deployment.updated}</TableCell>
-                          <TableCell>{deployment.available ?? 0}</TableCell>
-                          <TableCell className="text-sm text-muted-foreground">
-                            {deployment.age}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <K8sResourceTableCard
+            title="Deployments"
+            description="Deployments in the minikura namespace"
+            emptyMessage="No deployments found"
+            resources={deployments}
+            columns={deploymentColumns}
+          />
         </TabsContent>
 
         <TabsContent value="statefulsets" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>StatefulSets</CardTitle>
-              <CardDescription>StatefulSets in the minikura namespace</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {statefulSets.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No statefulsets found</p>
-              ) : (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Ready</TableHead>
-                        <TableHead>Desired</TableHead>
-                        <TableHead>Current</TableHead>
-                        <TableHead>Age</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {statefulSets.map((statefulSet) => (
-                        <TableRow key={statefulSet.name}>
-                          <TableCell className="font-medium">{statefulSet.name}</TableCell>
-                          <TableCell>{statefulSet.ready}</TableCell>
-                          <TableCell>{statefulSet.desired}</TableCell>
-                          <TableCell>{statefulSet.current}</TableCell>
-                          <TableCell className="text-sm text-muted-foreground">
-                            {statefulSet.age}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <K8sResourceTableCard
+            title="StatefulSets"
+            description="StatefulSets in the minikura namespace"
+            emptyMessage="No statefulsets found"
+            resources={statefulSets}
+            columns={statefulSetColumns}
+          />
         </TabsContent>
 
         <TabsContent value="services" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Services</CardTitle>
-              <CardDescription>Services in the minikura namespace</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {services.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No services found</p>
-              ) : (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Type</TableHead>
-                        <TableHead>Cluster IP</TableHead>
-                        <TableHead>External IP</TableHead>
-                        <TableHead>Ports</TableHead>
-                        <TableHead>Age</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {services.map((service) => (
-                        <TableRow key={service.name}>
-                          <TableCell className="font-medium">{service.name}</TableCell>
-                          <TableCell>
-                            <Badge variant="outline">{service.type}</Badge>
-                          </TableCell>
-                          <TableCell className="text-sm text-muted-foreground">
-                            {service.clusterIP}
-                          </TableCell>
-                          <TableCell className="text-sm text-muted-foreground">
-                            {service.externalIP}
-                          </TableCell>
-                          <TableCell className="text-sm text-muted-foreground">
-                            {service.ports}
-                          </TableCell>
-                          <TableCell className="text-sm text-muted-foreground">
-                            {service.age}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <K8sResourceTableCard
+            title="Services"
+            description="Services in the minikura namespace"
+            emptyMessage="No services found"
+            resources={services}
+            columns={serviceColumns}
+          />
         </TabsContent>
 
         <TabsContent value="configmaps" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>ConfigMaps</CardTitle>
-              <CardDescription>ConfigMaps in the minikura namespace</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {configMaps.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No configmaps found</p>
-              ) : (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Data Keys</TableHead>
-                        <TableHead>Age</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {configMaps.map((cm) => (
-                        <TableRow key={cm.name}>
-                          <TableCell className="font-medium">{cm.name}</TableCell>
-                          <TableCell>{cm.data}</TableCell>
-                          <TableCell className="text-sm text-muted-foreground">{cm.age}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <K8sResourceTableCard
+            title="ConfigMaps"
+            description="ConfigMaps in the minikura namespace"
+            emptyMessage="No configmaps found"
+            resources={configMaps}
+            columns={configMapColumns}
+          />
         </TabsContent>
 
         <TabsContent value="minecraft" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Minecraft Servers</CardTitle>
-              <CardDescription>Custom Minecraft server resources</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {minecraftServers.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No Minecraft servers found</p>
-              ) : (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Age</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {minecraftServers.map((server) => (
-                        <TableRow key={server.name}>
-                          <TableCell className="font-medium">{server.name}</TableCell>
-                          <TableCell>
-                            {server.status?.phase ? (
-                              getStatusBadge(server.status.phase)
-                            ) : (
-                              <Badge variant="secondary">Unknown</Badge>
-                            )}
-                          </TableCell>
-                          <TableCell className="text-sm text-muted-foreground">
-                            {server.age}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <K8sResourceTableCard
+            title="Minecraft Servers"
+            description="Custom Minecraft server resources"
+            emptyMessage="No Minecraft servers found"
+            resources={minecraftServers}
+            columns={customResourceColumns}
+          />
         </TabsContent>
 
         <TabsContent value="reverseproxy" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Reverse Proxy Servers</CardTitle>
-              <CardDescription>Custom reverse proxy server resources</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {reverseProxyServers.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No reverse proxy servers found</p>
-              ) : (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Age</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {reverseProxyServers.map((server) => (
-                        <TableRow key={server.name}>
-                          <TableCell className="font-medium">{server.name}</TableCell>
-                          <TableCell>
-                            {server.status?.phase ? (
-                              getStatusBadge(server.status.phase)
-                            ) : (
-                              <Badge variant="secondary">Unknown</Badge>
-                            )}
-                          </TableCell>
-                          <TableCell className="text-sm text-muted-foreground">
-                            {server.age}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <K8sResourceTableCard
+            title="Reverse Proxy Servers"
+            description="Custom reverse proxy server resources"
+            emptyMessage="No reverse proxy servers found"
+            resources={reverseProxyServers}
+            columns={customResourceColumns}
+          />
         </TabsContent>
       </Tabs>
-    </div>
+    </PageShell>
   );
 }
