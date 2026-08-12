@@ -38,7 +38,7 @@ object ProxyTransferUtils {
             .toList()
             .filter { playerOnThisProxy.contains(it.uniqueId.toString()) }
 
-        val batchSize = (players.size * 0.05).coerceAtLeast(1.0).toInt() // 5% of players per batch to avoid overloading the server
+        val batchSize = (players.size * 0.05).coerceAtLeast(1.0).toInt()
 
         var currentIndex = 0
 
@@ -65,7 +65,7 @@ object ProxyTransferUtils {
                         .withClaim("uuid", player.uniqueId.toString())
                         .withClaim("server", currentServer.serverInfo.name)
                         .withClaim("origin", currentProxyName)
-                        .withExpiresAt(Date(System.currentTimeMillis() + 60 * 5 * 1000)) // Token expires in 5 minutes
+                        .withExpiresAt(Date(System.currentTimeMillis() + 60 * 5 * 1000))
                         .sign(jwtAlgorithm)
 
                     player.storeCookie(Key.key("minikura", "transfer_packet"), token.toByteArray())
@@ -105,7 +105,6 @@ object ProxyTransferUtils {
             return
         }
 
-        // TODO: Load balance players across proxies
         val nextProxy = allProxies.first()
         val targetServer = ServerDataStore.getReverseProxyServer(nextProxy)
         if (targetServer != null) {

@@ -38,7 +38,6 @@ class ProxyTransferHandler(
 
     @Subscribe
     fun onCookieReceiveEvent(event: CookieReceiveEvent) {
-        // TODO: Fix don't pass the cookie to backend, it kicks with invalid packet for some reason
         if (event.originalKey == null || event.originalKey.toString() != "minikura:transfer_packet") {
             event.result = CookieReceiveEvent.ForwardResult.handled()
             return
@@ -105,8 +104,6 @@ class ProxyTransferHandler(
         val future = CompletableFuture<String>()
         cookieFutures[player.uniqueId.toString()] = future
 
-        // TODO: Check if player transferred with intent id of 3 (transfer)
-        // TODO: Can't seem to find a way to get the intent id from the event
         try {
             val serverName = future.get(3, TimeUnit.SECONDS)
 

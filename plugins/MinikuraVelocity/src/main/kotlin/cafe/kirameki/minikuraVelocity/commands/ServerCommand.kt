@@ -18,10 +18,8 @@ import java.util.function.Consumer
 object ServerCommand {
     fun createServerCommand(proxy: ProxyServer): BrigadierCommand {
         val serverNode = BrigadierCommand.literalArgumentBuilder("server")
-            //.requires { source: CommandSource? -> source is Player }
             .then(BrigadierCommand.requiredArgumentBuilder("serverName", StringArgumentType.word())
                 .suggests { context: CommandContext<CommandSource?>?, builder: SuggestionsBuilder ->
-                    // Add all available server names as suggestions
                     proxy.allServers.forEach(Consumer { server: RegisteredServer ->
                         builder.suggest(
                             server.serverInfo.name

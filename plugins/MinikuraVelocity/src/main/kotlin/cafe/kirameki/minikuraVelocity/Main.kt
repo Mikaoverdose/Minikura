@@ -91,7 +91,6 @@ class Main @Inject constructor(private val logger: Logger, private val server: P
             .plugin(this)
             .build()
 
-        // TODO: Rework this command and support <origin> and <destination> arguments
         val migrateCommand = SimpleCommand { p ->
             val source = p.source()
             val args = p.arguments()

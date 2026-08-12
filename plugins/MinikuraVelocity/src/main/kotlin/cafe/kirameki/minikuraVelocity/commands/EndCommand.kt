@@ -19,7 +19,6 @@ import java.util.function.Consumer
 object EndCommand {
     fun createEndCommand(proxy: ProxyServer): BrigadierCommand {
         val serverNode = BrigadierCommand.literalArgumentBuilder("end")
-            //.requires { source: CommandSource? -> source is Player }
             .then(BrigadierCommand.requiredArgumentBuilder("forceEnd", StringArgumentType.word())
                 .suggests { context: CommandContext<CommandSource?>?, builder: SuggestionsBuilder ->
                     builder.suggest("--force")
