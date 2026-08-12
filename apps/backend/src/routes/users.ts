@@ -11,13 +11,13 @@ export const userRoutes = new Elysia({ prefix: "/users" })
   .get("/:id", async ({ params }) => {
     return await userService.getUserById(params.id);
   })
-  .patch("/:id", async ({ params, body }) => {
+  .patch("/:id", async ({ params, body, user }) => {
     const input = updateUserSchema.parse(body);
-    return await userService.updateUser(params.id, input);
+    return await userService.updateUser(user.id, params.id, input);
   })
-  .patch("/:id/suspension", async ({ params, body }) => {
+  .patch("/:id/suspension", async ({ params, body, user }) => {
     const payload = updateSuspensionSchema.parse(body);
-    return await userService.updateSuspension(params.id, {
+    return await userService.updateSuspension(user.id, params.id, {
       isSuspended: payload.isSuspended,
       suspendedUntil: payload.suspendedUntil ? new Date(payload.suspendedUntil) : null,
     });

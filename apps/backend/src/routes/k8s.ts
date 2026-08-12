@@ -1,10 +1,11 @@
 import { labelKeys } from "@minikura/api";
 import { Elysia } from "elysia";
 import { k8sService } from "../application/di-container";
-import { requireAuth } from "../middleware/auth-guards";
+import { requireAdmin } from "../middleware/auth-guards";
+import { operatorResourceName } from "../services/operator-resource-sync";
 
 export const k8sRoutes = new Elysia({ prefix: "/k8s" })
-  .use(requireAuth)
+  .use(requireAdmin)
   .get("/status", async () => {
     return k8sService.getConnectionInfo();
   })
@@ -50,11 +51,11 @@ export const k8sRoutes = new Elysia({ prefix: "/k8s" })
     return logs;
   })
   .get("/servers/:serverId/pods", async ({ params }) => {
-    const labelSelector = `${labelKeys.serverId}=${params.serverId}`;
+    const labelSelector = `${labelKeys.serverId}=${operatorResourceName(params.serverId)}`;
     return await k8sService.getPodsByLabel(labelSelector);
   })
   .get("/reverse-proxy/:serverId/pods", async ({ params }) => {
-    const labelSelector = `${labelKeys.proxyId}=${params.serverId}`;
+    const labelSelector = `${labelKeys.proxyId}=${operatorResourceName(params.serverId)}`;
     return await k8sService.getPodsByLabel(labelSelector);
   })
   .get("/services/:serviceName", async ({ params }) => {

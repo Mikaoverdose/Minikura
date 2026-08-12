@@ -7,7 +7,7 @@ export const updateUserSchema = z.object({
 
 export const updateSuspensionSchema = z.object({
   isSuspended: z.boolean(),
-  suspendedUntil: z.string().nullable().optional(),
+  suspendedUntil: z.iso.datetime({ offset: true }).nullable().optional(),
 });
 
 export type UpdateUserInput = z.infer<typeof updateUserSchema>;

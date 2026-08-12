@@ -4,9 +4,15 @@ export type User = PrismaUser;
 
 export type CreateUserInput = Prisma.UserCreateInput;
 
-export type UpdateUserInput = Prisma.UserUpdateInput;
+export type UpdateUserInput = {
+  name?: string;
+  role?: "admin" | "user";
+};
 
-export type UpdateSuspensionInput = Prisma.UserUpdateInput;
+export type UpdateSuspensionInput = {
+  isSuspended: boolean;
+  suspendedUntil?: Date | null;
+};
 
 export function isUserSuspended(user: Pick<PrismaUser, "isSuspended" | "suspendedUntil">): boolean {
   if (!user.isSuspended) {

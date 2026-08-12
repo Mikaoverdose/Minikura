@@ -11,19 +11,20 @@ async function getSessionFromHeaders(headers: Headers | Record<string, string>) 
   });
 }
 
-export const authPlugin = new Elysia({ name: "auth" })
-  .mount(auth.handler)
-  .derive({ as: "scoped" }, async ({ request }) => {
+export const authPlugin = new Elysia({ name: "auth" }).derive(
+  { as: "scoped" },
+  async ({ request }) => {
     const session = await getSessionFromHeaders(request.headers);
 
     if (
       session?.user &&
-      isUserSuspended(
-        session.user as unknown as Pick<
-          { isSuspended: boolean; suspendedUntil: Date | null },
-          "isSuspended" | "suspendedUntil"
-        >
-      )
+      ((session.user as unknown as { banned?: boolean }).banned === true ||
+        isUserSuspended(
+          session.user as unknown as Pick<
+            { isSuspended: boolean; suspendedUntil: Date | null },
+            "isSuspended" | "suspendedUntil"
+          >
+        ))
     ) {
       return {
         user: null,
@@ -39,6 +40,7 @@ export const authPlugin = new Elysia({ name: "auth" })
       isAuthenticated: Boolean(session?.user),
       isSuspended: false,
     };
-  });
+  }
+);
 
 export type AuthPlugin = typeof authPlugin;

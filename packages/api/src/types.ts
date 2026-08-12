@@ -16,6 +16,7 @@ export type K8sResource = {
   namespace?: string;
   age: string;
   labels?: Record<string, string>;
+  annotations?: Record<string, string>;
   [key: string]: unknown;
 };
 
@@ -84,6 +85,7 @@ export type CustomResourceSummary = {
   namespace?: string;
   age: string;
   labels?: Record<string, string>;
+  annotations?: Record<string, string>;
   spec?: Record<string, unknown>;
   status?: { phase?: string; [key: string]: unknown };
 };

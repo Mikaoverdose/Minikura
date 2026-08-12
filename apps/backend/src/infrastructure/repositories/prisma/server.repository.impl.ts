@@ -19,8 +19,8 @@ export class PrismaServerRepository implements ServerRepository {
     if (!server) return null;
 
     if (omitSensitive) {
-      const { api_key, ...rest } = server;
-      return { ...rest, api_key: "" } as ServerWithEnvVars;
+      const { api_key, env_variables, ...rest } = server;
+      return { ...rest, api_key: "", env_variables: [] } as ServerWithEnvVars;
     }
 
     return server;
@@ -33,8 +33,8 @@ export class PrismaServerRepository implements ServerRepository {
 
     if (omitSensitive) {
       return servers.map((server) => {
-        const { api_key, ...rest } = server;
-        return { ...rest, api_key: "" } as ServerWithEnvVars;
+        const { api_key, env_variables, ...rest } = server;
+        return { ...rest, api_key: "", env_variables: [] } as ServerWithEnvVars;
       });
     }
 

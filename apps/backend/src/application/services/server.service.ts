@@ -9,11 +9,9 @@ import type {
   ServerRepository,
   ServerUpdateInput,
 } from "../../domain/repositories/server.repository";
+import { eventBus } from "../../infrastructure/event-bus";
 import type { K8sService } from "../../services/k8s";
-import {
-  type OperatorResourceSync,
-  operatorResourceName,
-} from "../../services/operator-resource-sync";
+import { operatorResourceName } from "../../services/operator-resource-sync";
 import type { IServerService } from "../interfaces/server.service.interface";
 import { BaseCrudService } from "./base-crud.service";
 
@@ -33,8 +31,7 @@ export class ServerService
 {
   constructor(
     serverRepo: ServerRepository,
-    private k8sService: K8sService,
-    private operatorResourceSync: OperatorResourceSync
+    private k8sService: K8sService
   ) {
     super(
       serverRepo,
@@ -77,12 +74,12 @@ export class ServerService
 
   override async setEnvVariable(serverId: string, key: string, value: string): Promise<void> {
     await super.setEnvVariable(serverId, key, value);
-    await this.operatorResourceSync.syncServerById(serverId);
+    await eventBus.publish(new ServerUpdatedEvent(serverId, {}));
   }
 
   override async deleteEnvVariable(serverId: string, key: string): Promise<void> {
     await super.deleteEnvVariable(serverId, key);
-    await this.operatorResourceSync.syncServerById(serverId);
+    await eventBus.publish(new ServerUpdatedEvent(serverId, {}));
   }
 
   async getConnectionInfo(serverId: string) {

@@ -8,7 +8,7 @@ import java.net.URI
 import java.time.Duration
 import com.google.gson.JsonParser
 
-class MinikuraWebSocketClient(private val plugin: Main, private val logger: Logger, private val server: ProxyServer, serverUri: URI?) : WebSocketClient(serverUri) {
+class MinikuraWebSocketClient(private val plugin: Main, private val logger: Logger, private val server: ProxyServer, serverUri: URI?, headers: Map<String, String>) : WebSocketClient(serverUri, headers) {
     
     override fun onOpen(handshakedata: ServerHandshake) {
         logger.info("Connected to WebSocket server at: ${uri}")

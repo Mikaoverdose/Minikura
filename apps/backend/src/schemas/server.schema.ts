@@ -7,18 +7,16 @@ import {
 import { z } from "zod";
 import { GameMode, ServerDifficulty } from "../domain/entities/enums";
 
-export const serverIdSchema = z.object({
-  id: z
-    .string()
-    .min(1, "Server ID is required")
-    .regex(/^[a-zA-Z0-9-_]+$/, "ID must be alphanumeric with - or _"),
-});
+const resourceIdSchema = z
+  .string()
+  .min(1, "Server ID is required")
+  .max(51, "Server ID must be at most 51 characters")
+  .regex(/^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/, "ID must be a lowercase DNS label");
+
+export const serverIdSchema = z.object({ id: resourceIdSchema });
 
 export const createServerSchema = z.object({
-  id: z
-    .string()
-    .min(1, "Server ID is required")
-    .regex(/^[a-zA-Z0-9-_]+$/, "ID must be alphanumeric with - or _"),
+  id: resourceIdSchema,
   description: z.string().nullable().optional(),
   listen_port: z.number().int().min(1).max(65535),
   type: z.nativeEnum(ServerType),
@@ -57,10 +55,7 @@ export const createServerSchema = z.object({
 export const updateServerSchema = createServerSchema.omit({ id: true, type: true }).partial();
 
 export const createReverseProxySchema = z.object({
-  id: z
-    .string()
-    .min(1, "Server ID is required")
-    .regex(/^[a-zA-Z0-9-_]+$/, "ID must be alphanumeric with - or _"),
+  id: resourceIdSchema,
   description: z.string().nullable().optional(),
   external_address: z.string().min(1, "External address is required"),
   external_port: z.number().int().min(1).max(65535),

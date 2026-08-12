@@ -5,13 +5,19 @@ import { bearerToken, findApiKeyOwner } from "./api-key";
 
 function authenticatedUser(ctx: { user?: User | null; isSuspended?: boolean }) {
   const { user, isSuspended } = ctx;
-  if (!user) {
-    throw new UnauthorizedError();
-  }
   if (isSuspended) {
     throw new ForbiddenError("Account is suspended");
   }
+  if (!user) {
+    throw new UnauthorizedError();
+  }
   return { user };
+}
+
+export function assertAdmin(user: Pick<User, "role">): void {
+  if (user.role !== "admin") {
+    throw new ForbiddenError("admin access required");
+  }
 }
 
 export const requireAuth = (app: Elysia) => {
@@ -39,3 +45,11 @@ export const requirePluginApiKey = (app: Elysia) => {
     return { pluginAuth: owner };
   });
 };
+
+export const requirePluginKind = (kind: "server" | "reverse-proxy") => (app: Elysia) =>
+  app.use(requirePluginApiKey).derive(({ pluginAuth }) => {
+    if (pluginAuth.kind !== kind) {
+      throw new ForbiddenError(`API key is not authorized for ${kind} resources`);
+    }
+    return { pluginAuth };
+  });

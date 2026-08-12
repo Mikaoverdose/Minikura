@@ -31,6 +31,10 @@ const app = new Elysia({ adapter: node() })
     set.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, Cookie";
   })
   .options("/*", () => new Response(null, { status: 204 }))
+  .all("/auth/admin/*", ({ set }) => {
+    set.status = 404;
+    return { message: "Not found" };
+  })
   .all("/auth/*", ({ request }) => auth.handler(request))
   .use(bootstrapRoutes)
   .use(authPlugin)

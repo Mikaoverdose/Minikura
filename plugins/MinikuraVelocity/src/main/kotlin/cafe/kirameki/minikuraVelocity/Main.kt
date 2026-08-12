@@ -42,7 +42,7 @@ class Main @Inject constructor(private val logger: Logger, private val server: P
     private val client = OkHttpClient()
     private val apiKey: String = System.getenv("MINIKURA_API_KEY") ?: ""
     private val apiUrl: String = System.getenv("MINIKURA_API_URL") ?: "http://localhost:3000/api"
-    private val websocketUrl: String = System.getenv("MINIKURA_WEBSOCKET_URL") ?: "ws://localhost:3000/api/servers/ws?apiKey=$apiKey"
+    private val websocketUrl: String = System.getenv("MINIKURA_WEBSOCKET_URL") ?: "ws://localhost:3000/api/servers/ws"
     private var acceptingTransfers = AtomicBoolean(false)
     private val redisBungeeApi = RedisBungeeAPI.getRedisBungeeApi()
 
@@ -55,7 +55,7 @@ class Main @Inject constructor(private val logger: Logger, private val server: P
         ProxyTransferUtils.logger = logger
         ProxyTransferUtils.acceptingTransfers = acceptingTransfers
 
-        val client = createWebSocketClient(this, logger, server, websocketUrl)
+        val client = createWebSocketClient(this, logger, server, websocketUrl, apiKey)
         client.connect()
 
         val commandManager: CommandManager = server.commandManager
@@ -231,7 +231,7 @@ class Main @Inject constructor(private val logger: Logger, private val server: P
         servers.clear()
 
         for (data in serversData) {
-            val serverInfo = ServerInfo(data.id, InetSocketAddress("localhost", data.listen_port))
+            val serverInfo = ServerInfo(data.id, InetSocketAddress(data.connection_address, data.listen_port))
             val registeredServer = server.createRawRegisteredServer(serverInfo)
             servers[data.id] = registeredServer
             this.server.registerServer(registeredServer.serverInfo)

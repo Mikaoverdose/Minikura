@@ -19,8 +19,8 @@ export class PrismaReverseProxyRepository implements ReverseProxyRepository {
     if (!proxy) return null;
 
     if (omitSensitive) {
-      const { api_key, ...rest } = proxy;
-      return { ...rest, api_key: "" } as ReverseProxyWithEnvVars;
+      const { api_key, env_variables, ...rest } = proxy;
+      return { ...rest, api_key: "", env_variables: [] } as ReverseProxyWithEnvVars;
     }
 
     return proxy;
@@ -33,8 +33,8 @@ export class PrismaReverseProxyRepository implements ReverseProxyRepository {
 
     if (omitSensitive) {
       return proxies.map((proxy) => {
-        const { api_key, ...rest } = proxy;
-        return { ...rest, api_key: "" } as ReverseProxyWithEnvVars;
+        const { api_key, env_variables, ...rest } = proxy;
+        return { ...rest, api_key: "", env_variables: [] } as ReverseProxyWithEnvVars;
       });
     }
 

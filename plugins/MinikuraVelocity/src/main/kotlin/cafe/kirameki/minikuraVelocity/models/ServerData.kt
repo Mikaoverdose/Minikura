@@ -8,6 +8,7 @@ data class ServerData(
     val type: ServerType,
     val description: String?,
     val listen_port: Int = 25565,
+    val connection_address: String,
     val memory: String = "1G",
     val env_variables: List<CustomEnvironmentVariableData> = emptyList(),
     val api_key: String,

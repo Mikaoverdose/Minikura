@@ -10,6 +10,7 @@ interface CustomResourceItem {
     namespace?: string;
     creationTimestamp?: string;
     labels?: Record<string, string>;
+    annotations?: Record<string, string>;
   };
   spec?: Record<string, unknown>;
   status?: { phase?: string; [key: string]: unknown };
@@ -47,6 +48,7 @@ export class CustomResourceOperations extends BaseK8sOperations {
         namespace: item.metadata?.namespace ?? this.namespace,
         age: getAge(item.metadata?.creationTimestamp),
         labels: item.metadata?.labels,
+        annotations: item.metadata?.annotations,
         spec: item.spec ?? {},
         status: item.status ?? {},
       }));

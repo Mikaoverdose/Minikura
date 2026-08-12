@@ -3,9 +3,11 @@ import { API_GROUP } from "@minikura/api";
 import { prisma, type ReverseProxyWithEnvVars, type ServerWithEnvVars } from "@minikura/db";
 import { buildKubeConfig } from "@minikura/shared/kube-auth";
 import { logger } from "../infrastructure/logger";
+
 const API_VERSION = "v1alpha1";
 const FIELD_MANAGER = "minikura-backend";
 const SYNC_INTERVAL_MS = 30_000;
+const DEFAULT_OPERATOR_BACKEND_URL = "http://minikura-backend:3000/api";
 
 type CustomResource = {
   apiVersion: string;
@@ -14,19 +16,17 @@ type CustomResource = {
     name: string;
     namespace: string;
     labels: Record<string, string>;
+    annotations?: Record<string, string>;
     resourceVersion?: string;
   };
   spec: Record<string, unknown>;
 };
 
 export function operatorResourceName(id: string): string {
-  const normalized = id
-    .toLowerCase()
-    .replace(/[^a-z0-9.-]+/g, "-")
-    .replace(/^[^a-z0-9]+|[^a-z0-9]+$/g, "")
-    .slice(0, 63);
-  if (!normalized) throw new Error(`Cannot derive a Kubernetes resource name from ${id}`);
-  return normalized;
+  if (!/^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/.test(id) || id.length > 51) {
+    throw new Error(`Invalid Kubernetes resource ID: ${id}`);
+  }
+  return id;
 }
 
 function serviceType(type: string): "ClusterIP" | "NodePort" | "LoadBalancer" {
@@ -38,12 +38,15 @@ function serviceType(type: string): "ClusterIP" | "NodePort" | "LoadBalancer" {
 function labels(id: string): Record<string, string> {
   return {
     "app.kubernetes.io/managed-by": FIELD_MANAGER,
-    "minikura.kirameki.cafe/database-id": id.slice(0, 63),
+    "minikura.kirameki.cafe/database-id": operatorResourceName(id),
   };
 }
 
 export class OperatorResourceSync {
   private readonly namespace = process.env.KUBERNETES_NAMESPACE || "minikura";
+  private readonly backendUrl =
+    process.env.MINIKURA_OPERATOR_BACKEND_URL || DEFAULT_OPERATOR_BACKEND_URL;
+  private readonly velocityPluginUrl = process.env.MINIKURA_VELOCITY_PLUGIN_URL;
   private coreApi?: k8s.CoreV1Api;
   private customObjectsApi?: k8s.CustomObjectsApi;
   private syncing = false;
@@ -72,10 +75,19 @@ export class OperatorResourceSync {
         prisma.server.findMany({ include: { env_variables: true } }),
         prisma.reverseProxyServer.findMany({ include: { env_variables: true } }),
       ]);
-      await Promise.all([
+      const syncResults = await Promise.allSettled([
         ...servers.map((server) => this.syncServer(server)),
         ...proxies.map((proxy) => this.syncReverseProxy(proxy)),
       ]);
+      const failures = syncResults.filter(
+        (result): result is PromiseRejectedResult => result.status === "rejected"
+      );
+      if (failures.length > 0) {
+        for (const failure of failures) {
+          logger.error({ err: failure.reason }, "Failed to synchronize an operator resource");
+        }
+        return;
+      }
       await Promise.all([
         this.deleteStaleResources(
           "minecraftservers",
@@ -94,7 +106,7 @@ export class OperatorResourceSync {
   }
 
   async syncServerById(id: string): Promise<void> {
-    if (!this.coreApi || !this.customObjectsApi) return;
+    this.requireClients();
     const server = await prisma.server.findUnique({
       where: { id },
       include: { env_variables: true },
@@ -103,7 +115,7 @@ export class OperatorResourceSync {
   }
 
   async syncReverseProxyById(id: string): Promise<void> {
-    if (!this.coreApi || !this.customObjectsApi) return;
+    this.requireClients();
     const proxy = await prisma.reverseProxyServer.findUnique({
       where: { id },
       include: { env_variables: true },
@@ -112,23 +124,27 @@ export class OperatorResourceSync {
   }
 
   async deleteServer(id: string): Promise<void> {
-    if (!this.customObjectsApi) return;
+    this.requireClients();
     await this.deleteResource("minecraftservers", operatorResourceName(id));
   }
 
   async deleteReverseProxy(id: string): Promise<void> {
-    if (!this.customObjectsApi) return;
+    this.requireClients();
     await this.deleteResource("reverseproxyservers", operatorResourceName(id));
   }
 
   private async syncServer(server: ServerWithEnvVars): Promise<void> {
     const name = operatorResourceName(server.id);
-    const secretName = `${name}-api-key`;
+    const secretName = `mc-${name}-api-key`;
     await this.upsertSecret(secretName, server.api_key, labels(server.id));
     await this.upsertResource("minecraftservers", {
       apiVersion: `${API_GROUP}/${API_VERSION}`,
       kind: "MinecraftServer",
-      metadata: { name, namespace: this.namespace, labels: labels(server.id) },
+      metadata: {
+        name,
+        namespace: this.namespace,
+        labels: labels(server.id),
+      },
       spec: {
         type: server.type,
         description: server.description ?? undefined,
@@ -163,16 +179,21 @@ export class OperatorResourceSync {
         apiKeySecretRef: secretName,
       },
     });
+    await this.deleteSecret(`${name}-api-key`);
   }
 
   private async syncReverseProxy(proxy: ReverseProxyWithEnvVars): Promise<void> {
     const name = operatorResourceName(proxy.id);
-    const secretName = `${name}-api-key`;
+    const secretName = `rp-${name}-api-key`;
     await this.upsertSecret(secretName, proxy.api_key, labels(proxy.id));
     await this.upsertResource("reverseproxyservers", {
       apiVersion: `${API_GROUP}/${API_VERSION}`,
       kind: "ReverseProxyServer",
-      metadata: { name, namespace: this.namespace, labels: labels(proxy.id) },
+      metadata: {
+        name,
+        namespace: this.namespace,
+        labels: labels(proxy.id),
+      },
       spec: {
         type: proxy.type,
         description: proxy.description ?? undefined,
@@ -190,8 +211,11 @@ export class OperatorResourceSync {
         jvm: { heapPercent: 80 },
         env: proxy.env_variables.map((entry) => ({ name: entry.key, value: entry.value })),
         apiKeySecretRef: secretName,
+        backendURL: this.backendUrl,
+        pluginURL: proxy.type === "VELOCITY" ? this.velocityPluginUrl : undefined,
       },
     });
+    await this.deleteSecret(`${name}-api-key`);
   }
 
   private async upsertResource(plural: string, resource: CustomResource): Promise<void> {
@@ -292,7 +316,7 @@ export class OperatorResourceSync {
     } catch (error) {
       if (!this.isNotFound(error)) throw error;
     }
-    await this.deleteSecret(`${name}-api-key`);
+    await this.deleteSecret(`${plural === "minecraftservers" ? "mc" : "rp"}-${name}-api-key`);
   }
 
   private async deleteSecret(name: string): Promise<void> {
@@ -315,5 +339,11 @@ export class OperatorResourceSync {
           "statusCode" in error.response &&
           error.response.statusCode === 404))
     );
+  }
+
+  private requireClients(): void {
+    if (!this.coreApi || !this.customObjectsApi) {
+      throw new Error("Kubernetes operator resource synchronization is unavailable");
+    }
   }
 }

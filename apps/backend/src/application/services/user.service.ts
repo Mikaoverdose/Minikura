@@ -23,12 +23,24 @@ export class UserService implements IUserService {
     return this.userRepo.findAll();
   }
 
-  async updateUser(id: string, input: UpdateUserInput): Promise<User> {
-    return this.userRepo.update(id, input);
+  async updateUser(requestingUserId: string, id: string, input: UpdateUserInput): Promise<User> {
+    if (requestingUserId === id && input.role && input.role !== "admin") {
+      throw new BusinessRuleError("Cannot demote yourself");
+    }
+    return this.userRepo.updateWithAdminSafety(id, input);
   }
 
-  async updateSuspension(id: string, input: UpdateSuspensionInput): Promise<User> {
-    const user = await this.userRepo.updateSuspension(id, input);
+  async updateSuspension(
+    requestingUserId: string,
+    id: string,
+    input: UpdateSuspensionInput
+  ): Promise<User> {
+    const suspensionIsActive =
+      input.isSuspended && (!input.suspendedUntil || input.suspendedUntil > new Date());
+    if (requestingUserId === id && suspensionIsActive) {
+      throw new BusinessRuleError("Cannot suspend yourself");
+    }
+    const user = await this.userRepo.updateSuspensionWithAdminSafety(id, input);
     if (input.isSuspended) {
       const suspendedUntil = input.suspendedUntil instanceof Date ? input.suspendedUntil : null;
       await eventBus.publish(new UserSuspendedEvent(id, suspendedUntil));
@@ -42,6 +54,6 @@ export class UserService implements IUserService {
     if (requestingUserId === targetUserId) {
       throw new BusinessRuleError("Cannot delete yourself");
     }
-    await this.userRepo.delete(targetUserId);
+    await this.userRepo.deleteWithAdminSafety(targetUserId);
   }
 }

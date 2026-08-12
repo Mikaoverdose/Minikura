@@ -9,11 +9,9 @@ import type {
   ReverseProxyRepository,
   ReverseProxyUpdateInput,
 } from "../../domain/repositories/reverse-proxy.repository";
+import { eventBus } from "../../infrastructure/event-bus";
 import type { K8sService } from "../../services/k8s";
-import {
-  type OperatorResourceSync,
-  operatorResourceName,
-} from "../../services/operator-resource-sync";
+import { operatorResourceName } from "../../services/operator-resource-sync";
 import type { IReverseProxyService } from "../interfaces/reverse-proxy.service.interface";
 import { BaseCrudService } from "./base-crud.service";
 
@@ -33,8 +31,7 @@ export class ReverseProxyService
 {
   constructor(
     reverseProxyRepo: ReverseProxyRepository,
-    private k8sService: K8sService,
-    private operatorResourceSync: OperatorResourceSync
+    private k8sService: K8sService
   ) {
     super(
       reverseProxyRepo,
@@ -77,12 +74,12 @@ export class ReverseProxyService
 
   override async setEnvVariable(proxyId: string, key: string, value: string): Promise<void> {
     await super.setEnvVariable(proxyId, key, value);
-    await this.operatorResourceSync.syncReverseProxyById(proxyId);
+    await eventBus.publish(new ReverseProxyUpdatedEvent(proxyId, {}));
   }
 
   override async deleteEnvVariable(proxyId: string, key: string): Promise<void> {
     await super.deleteEnvVariable(proxyId, key);
-    await this.operatorResourceSync.syncReverseProxyById(proxyId);
+    await eventBus.publish(new ReverseProxyUpdatedEvent(proxyId, {}));
   }
 
   async getConnectionInfo(proxyId: string) {

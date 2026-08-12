@@ -10,7 +10,13 @@ export const auth = betterAuth({
     provider: "postgresql",
     usePlural: false,
   }),
-  emailAndPassword: { enabled: true },
+  emailAndPassword: { enabled: true, disableSignUp: true },
+  user: {
+    additionalFields: {
+      isSuspended: { type: "boolean", required: false, defaultValue: false, input: false },
+      suspendedUntil: { type: "date", required: false, input: false },
+    },
+  },
   plugins: [admin(), openAPI()],
   trustedOrigins: [webUrl],
   basePath: "/auth",

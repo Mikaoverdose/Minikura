@@ -16,11 +16,7 @@ const k8sService = new K8sService();
 const operatorResourceSync = new OperatorResourceSync();
 
 export const userService = new UserService(userRepo);
-export const serverService = new ServerService(serverRepo, k8sService, operatorResourceSync);
-export const reverseProxyService = new ReverseProxyService(
-  reverseProxyRepo,
-  k8sService,
-  operatorResourceSync
-);
+export const serverService = new ServerService(serverRepo, k8sService);
+export const reverseProxyService = new ReverseProxyService(reverseProxyRepo, k8sService);
 export const wsService = webSocketService;
 export { k8sService, operatorResourceSync };
