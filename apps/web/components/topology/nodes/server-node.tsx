@@ -43,7 +43,7 @@ export function ServerNode({ data, selected }: NodeProps) {
         className="text-xs bg-muted/50 rounded px-2 py-1.5"
         valueClassName={cn(
           "font-semibold",
-          readyPods === podCount ? "text-green-600" : "text-yellow-600"
+          readyPods === podCount ? "text-success" : "text-warning"
         )}
       >
         {readyPods}/{podCount}
@@ -77,7 +77,7 @@ export function ServerNode({ data, selected }: NodeProps) {
         <div className="space-y-1 text-[11px] pt-1 border-t">
           <CompactRow
             label="Restarts"
-            valueClassName={restartCount > 0 ? "text-yellow-600" : "text-green-600"}
+            valueClassName={restartCount > 0 ? "text-warning" : "text-success"}
           >
             {restartCount}
           </CompactRow>
@@ -93,7 +93,7 @@ export function ServerNode({ data, selected }: NodeProps) {
       {(k8sNodes.length > 0 || connectedProxies.length > 0) && (
         <div className="space-y-1 text-[11px] pt-1 border-t">
           {connectedProxies.length > 0 && (
-            <CompactRow label="Exposed By" valueClassName="font-semibold text-blue-600">
+            <CompactRow label="Exposed By" valueClassName="font-semibold text-info">
               {connectedProxies.length} proxies
             </CompactRow>
           )}

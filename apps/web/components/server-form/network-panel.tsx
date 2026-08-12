@@ -30,12 +30,18 @@ export function NetworkPanel({ formData, updateField }: ServerFormPanelProps) {
             max="65535"
           />
         </Field>
-        <Field id="serviceType" label="Service Type" tooltip="How the server is exposed in Kubernetes">
+        <Field
+          id="serviceType"
+          label="Service Type"
+          tooltip="How the server is exposed in Kubernetes"
+        >
           <Select
             value={formData.serviceType}
             onValueChange={(value) => updateField("serviceType", value as ServiceType)}
           >
-            <SelectTrigger id="serviceType"><SelectValue /></SelectTrigger>
+            <SelectTrigger id="serviceType">
+              <SelectValue />
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value="CLUSTER_IP">ClusterIP (Internal Only)</SelectItem>
               <SelectItem value="NODE_PORT">NodePort (External Access)</SelectItem>

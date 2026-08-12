@@ -203,13 +203,15 @@ export function Terminal({
     <div className="relative w-full h-full">
       <div className="absolute top-2 right-2 flex items-center gap-2 z-10">
         {connected && (
-          <div className="flex items-center gap-2 bg-green-500/20 text-green-500 text-xs px-2 py-1 rounded">
-            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+          <div className="flex items-center gap-2 rounded bg-success/20 px-2 py-1 text-xs text-success">
+            <div className="h-2 w-2 animate-pulse rounded-full bg-success" />
             Connected
           </div>
         )}
         {error && (
-          <div className="bg-red-500/20 text-red-500 text-xs px-2 py-1 rounded">{error}</div>
+          <div className="rounded bg-destructive/20 px-2 py-1 text-xs text-destructive">
+            {error}
+          </div>
         )}
         <button
           type="button"

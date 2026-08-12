@@ -15,8 +15,8 @@ export function ProxyNode({ data, selected }: NodeProps) {
   return (
     <TopologyNodeCard
       selected={selected}
-      icon={<Globe className="h-4 w-4 text-blue-500" />}
-      iconClassName="bg-blue-500/10"
+      icon={<Globe className="h-4 w-4 text-info" />}
+      iconClassName="bg-info/10"
       title={proxy.id}
       description={proxy.description}
       health={health}
@@ -37,7 +37,7 @@ export function ProxyNode({ data, selected }: NodeProps) {
         className="text-xs bg-muted/50 rounded px-2 py-1.5"
         valueClassName={cn(
           "font-semibold",
-          readyPods === podCount ? "text-green-600" : "text-yellow-600"
+          readyPods === podCount ? "text-success" : "text-warning"
         )}
       >
         {readyPods}/{podCount}
@@ -80,7 +80,7 @@ export function ProxyNode({ data, selected }: NodeProps) {
         <div className="space-y-1 text-[11px] pt-1 border-t">
           <CompactRow
             label="Restarts"
-            valueClassName={restartCount > 0 ? "text-yellow-600" : "text-green-600"}
+            valueClassName={restartCount > 0 ? "text-warning" : "text-success"}
           >
             {restartCount}
           </CompactRow>
@@ -90,7 +90,7 @@ export function ProxyNode({ data, selected }: NodeProps) {
               {pods[0].ip}
             </CompactRow>
           )}
-          <CompactRow label="Routing To" valueClassName="font-semibold text-blue-600">
+          <CompactRow label="Routing To" valueClassName="font-semibold text-info">
             {connectedServers.length} servers
           </CompactRow>
           {k8sNodes.length > 0 && (

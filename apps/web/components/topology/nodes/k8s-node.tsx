@@ -12,8 +12,8 @@ export function K8sNodeComponent({ data, selected }: NodeProps) {
   return (
     <TopologyNodeCard
       selected={selected}
-      icon={<Box className="h-4 w-4 text-blue-600" />}
-      iconClassName="bg-blue-500/10"
+      icon={<Box className="h-4 w-4 text-info" />}
+      iconClassName="bg-info/10"
       title={node.name || "Unknown"}
       description="Kubernetes Node"
       health={health}
@@ -35,7 +35,7 @@ export function K8sNodeComponent({ data, selected }: NodeProps) {
       <CompactRow
         label="Total Pods"
         className="text-xs bg-muted/50 rounded px-2 py-1.5"
-        valueClassName="font-semibold text-blue-600"
+        valueClassName="font-semibold text-info"
       >
         {podCount}
       </CompactRow>
@@ -55,7 +55,7 @@ export function K8sNodeComponent({ data, selected }: NodeProps) {
             <CompactRow
               label="CPU"
               icon={<Cpu className="h-3 w-3" />}
-              valueClassName="font-semibold text-xs text-blue-600"
+              valueClassName="font-semibold text-xs text-info"
             >
               {metrics.cpuUsage}
             </CompactRow>
@@ -64,7 +64,7 @@ export function K8sNodeComponent({ data, selected }: NodeProps) {
             <CompactRow
               label="Memory"
               icon={<HardDrive className="h-3 w-3" />}
-              valueClassName="font-semibold text-xs text-blue-600"
+              valueClassName="font-semibold text-xs text-info"
             >
               {metrics.memoryUsage}
             </CompactRow>

@@ -6,11 +6,13 @@ import { cn } from "@/lib/cn";
 const statusConfig = {
   success: {
     icon: CheckCircle2,
-    className: "border-success/35 bg-success/12 text-success-foreground",
+    className:
+      "border-success/35 bg-success/12 text-success-foreground dark:bg-success/15 dark:text-success",
   },
   warning: {
     icon: AlertCircle,
-    className: "border-warning/40 bg-warning/14 text-warning-foreground",
+    className:
+      "border-warning/40 bg-warning/14 text-warning-foreground dark:bg-warning/15 dark:text-warning",
   },
   error: { icon: XCircle, className: "border-destructive/35 bg-destructive/10 text-destructive" },
   neutral: { icon: CircleDashed, className: "border-border bg-muted/60 text-muted-foreground" },

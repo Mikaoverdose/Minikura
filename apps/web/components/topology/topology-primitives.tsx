@@ -17,9 +17,10 @@ const healthLabels: Record<HealthStatus, string> = {
 };
 
 const solidHealthClasses: Record<Exclude<HealthStatus, "unknown">, string> = {
-  healthy: "bg-green-500 hover:bg-green-600",
-  degraded: "bg-yellow-500 hover:bg-yellow-600",
-  unhealthy: "bg-red-500 hover:bg-red-600",
+  healthy: "border-transparent bg-success text-success-foreground hover:bg-success/90",
+  degraded: "border-transparent bg-warning text-warning-foreground hover:bg-warning/90",
+  unhealthy:
+    "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/90",
 };
 
 interface HealthBadgeProps {
@@ -39,9 +40,9 @@ export function HealthBadge({
 
   if (appearance === "summary") {
     const indicatorClasses = {
-      healthy: "bg-green-500",
-      degraded: "bg-yellow-500",
-      unhealthy: "bg-red-500",
+      healthy: "bg-success",
+      degraded: "bg-warning",
+      unhealthy: "bg-destructive",
       unknown: "bg-muted-foreground",
     }[status];
 
@@ -156,7 +157,7 @@ interface MetricRowProps {
 export function MetricRow({ label, icon, usage, limit }: MetricRowProps) {
   return (
     <CompactRow label={label} icon={icon} valueClassName="text-xs">
-      {usage && <span className="text-blue-600">{usage} / </span>}
+      {usage && <span className="text-info">{usage} / </span>}
       <span className="text-muted-foreground">{limit}</span>
     </CompactRow>
   );
@@ -207,7 +208,7 @@ export function CopyableCode({ value, title = "Copy address" }: CopyableCodeProp
         onClick={handleCopy}
         title={copied ? "Copied!" : title}
       >
-        {copied ? <Check className="h-3 w-3 text-green-500" /> : <Copy className="h-3 w-3" />}
+        {copied ? <Check className="h-3 w-3 text-success" /> : <Copy className="h-3 w-3" />}
       </Button>
     </div>
   );

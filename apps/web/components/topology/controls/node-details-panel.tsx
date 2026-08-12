@@ -85,7 +85,7 @@ function ServerDetails({ metadata }: { metadata: ServerMetadata }) {
           <DetailRow label="Behind Proxies" value={connectedProxies.length.toString()} />
           <IdentifierList
             items={connectedProxies}
-            className="text-sm bg-blue-50 border border-blue-200"
+            className="text-sm bg-info/12 border border-info/30"
           />
         </DetailSection>
       )}
@@ -129,7 +129,7 @@ function ProxyDetails({ metadata }: { metadata: ProxyMetadata }) {
         {connectedServers.length > 0 && (
           <IdentifierList
             items={connectedServers}
-            className="text-sm bg-green-50 border border-green-200"
+            className="text-sm bg-success/12 border border-success/30"
           />
         )}
       </DetailSection>
@@ -166,7 +166,7 @@ function K8sNodeDetails({ metadata }: { metadata: K8sNodeMetadata }) {
             <p className="text-sm font-medium mb-2">Server Pods:</p>
             <IdentifierList
               items={serverPods}
-              className="text-xs bg-green-50 border border-green-200"
+              className="text-xs bg-success/12 border border-success/30"
               withMargin={false}
             />
           </div>
@@ -177,7 +177,7 @@ function K8sNodeDetails({ metadata }: { metadata: K8sNodeMetadata }) {
             <p className="text-sm font-medium mb-2">Proxy Pods:</p>
             <IdentifierList
               items={proxyPods}
-              className="text-xs bg-blue-50 border border-blue-200"
+              className="text-xs bg-info/12 border border-info/30"
               withMargin={false}
             />
           </div>
@@ -204,7 +204,7 @@ function KubernetesWorkloadDetails({
           </div>
           <IdentifierList
             items={k8sNodes}
-            className="text-xs bg-blue-50 border border-blue-200 ml-6"
+            className="text-xs bg-info/12 border border-info/30 ml-6"
             withMargin={false}
           />
         </div>

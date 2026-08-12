@@ -51,7 +51,11 @@ export function PerformancePanel({ formData, updateField }: ServerFormPanelProps
           rows={3}
         />
       </Field>
-      <Field id="jvmXxOpts" label="JVM -XX Options" tooltip="Space-separated -XX JVM flags for advanced tuning">
+      <Field
+        id="jvmXxOpts"
+        label="JVM -XX Options"
+        tooltip="Space-separated -XX JVM flags for advanced tuning"
+      >
         <Textarea
           id="jvmXxOpts"
           value={formData.jvmXxOpts || ""}
@@ -60,7 +64,11 @@ export function PerformancePanel({ formData, updateField }: ServerFormPanelProps
           rows={2}
         />
       </Field>
-      <Field id="jvmDdOpts" label="JVM -D System Properties" tooltip="Comma-separated key=value pairs for system properties">
+      <Field
+        id="jvmDdOpts"
+        label="JVM -D System Properties"
+        tooltip="Comma-separated key=value pairs for system properties"
+      >
         <Textarea
           id="jvmDdOpts"
           value={formData.jvmDdOpts || ""}

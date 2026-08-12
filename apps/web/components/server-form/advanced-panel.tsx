@@ -23,7 +23,11 @@ export function AdvancedPanel({
   return (
     <TabsContent value="advanced" className="space-y-4 mt-4">
       <div className="grid grid-cols-3 gap-4">
-        <Field id="timezone" label="Timezone" tooltip="Timezone for server logs and scheduling (e.g., America/New_York)">
+        <Field
+          id="timezone"
+          label="Timezone"
+          tooltip="Timezone for server logs and scheduling (e.g., America/New_York)"
+        >
           <Input
             id="timezone"
             value={formData.timezone}

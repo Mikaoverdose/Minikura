@@ -10,7 +10,11 @@ export function ResourcesPanel({ formData, updateField }: ServerFormPanelProps) 
       {formData.type === "CUSTOM" && (
         <FormNotice>Resource pack settings may not apply to custom jars.</FormNotice>
       )}
-      <Field id="resourcePack" label="Resource Pack URL" tooltip="URL or path to a resource pack ZIP file">
+      <Field
+        id="resourcePack"
+        label="Resource Pack URL"
+        tooltip="URL or path to a resource pack ZIP file"
+      >
         <Input
           id="resourcePack"
           value={formData.resourcePack || ""}
@@ -18,7 +22,11 @@ export function ResourcesPanel({ formData, updateField }: ServerFormPanelProps) 
           placeholder="https://example.com/resourcepack.zip"
         />
       </Field>
-      <Field id="resourcePackSha1" label="Resource Pack SHA1" tooltip="SHA1 checksum of the resource pack for verification">
+      <Field
+        id="resourcePackSha1"
+        label="Resource Pack SHA1"
+        tooltip="SHA1 checksum of the resource pack for verification"
+      >
         <Input
           id="resourcePackSha1"
           value={formData.resourcePackSha1 || ""}
@@ -34,7 +42,11 @@ export function ResourcesPanel({ formData, updateField }: ServerFormPanelProps) 
       >
         Enforce Resource Pack
       </CheckboxField>
-      <Field id="serverIcon" label="Server Icon URL" tooltip="URL or path to a server icon image (PNG, 64x64 recommended)">
+      <Field
+        id="serverIcon"
+        label="Server Icon URL"
+        tooltip="URL or path to a server icon image (PNG, 64x64 recommended)"
+      >
         <Input
           id="serverIcon"
           value={formData.serverIcon || ""}

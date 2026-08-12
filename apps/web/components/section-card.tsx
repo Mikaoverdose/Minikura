@@ -1,4 +1,7 @@
+"use client";
+
 import type * as React from "react";
+import { FadeIn } from "@/components/motion";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/cn";
 
@@ -21,19 +24,27 @@ export function SectionCard({
   ...props
 }: SectionCardProps) {
   return (
-    <Card className={className} {...props}>
-      <CardHeader className="border-b">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            {icon}
-            <CardTitle>{title}</CardTitle>
+    <FadeIn y={14} duration={0.5}>
+      <Card
+        className={cn(
+          "transition-[border-color,box-shadow] duration-200 hover:border-foreground/40 hover:shadow-[4px_4px_0_color-mix(in_oklch,var(--foreground)_12%,transparent)]",
+          className
+        )}
+        {...props}
+      >
+        <CardHeader className="border-b">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              {icon}
+              <CardTitle>{title}</CardTitle>
+            </div>
+            {headerAction}
           </div>
-          {headerAction}
-        </div>
-        {description && <CardDescription>{description}</CardDescription>}
-      </CardHeader>
-      <CardContent className={contentClassName}>{children}</CardContent>
-    </Card>
+          {description && <CardDescription>{description}</CardDescription>}
+        </CardHeader>
+        <CardContent className={contentClassName}>{children}</CardContent>
+      </Card>
+    </FadeIn>
   );
 }
 

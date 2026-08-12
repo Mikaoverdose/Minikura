@@ -11,7 +11,11 @@ export function ModsPanel({ formData, updateField }: ServerFormPanelProps) {
       {formData.type === "CUSTOM" && (
         <FormNotice>Mods/plugins automation is intended for Vanilla/Paper workflows.</FormNotice>
       )}
-      <Field id="plugins" label="Plugins" tooltip="Comma-separated list of plugin URLs or filenames">
+      <Field
+        id="plugins"
+        label="Plugins"
+        tooltip="Comma-separated list of plugin URLs or filenames"
+      >
         <Textarea
           id="plugins"
           value={formData.plugins || ""}

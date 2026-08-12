@@ -45,7 +45,9 @@ export function WorldPanel({ formData, updateField }: ServerFormPanelProps) {
           value={formData.levelType || "default"}
           onValueChange={(value) => updateField("levelType", value === "default" ? "" : value)}
         >
-          <SelectTrigger id="levelType"><SelectValue placeholder="Default" /></SelectTrigger>
+          <SelectTrigger id="levelType">
+            <SelectValue placeholder="Default" />
+          </SelectTrigger>
           <SelectContent>
             <SelectItem value="default">Default</SelectItem>
             <SelectItem value="flat">Flat/Superflat</SelectItem>
@@ -98,13 +100,25 @@ export function WorldPanel({ formData, updateField }: ServerFormPanelProps) {
         </Field>
       </div>
       <div className="space-y-3">
-        <CheckboxField id="spawnAnimals" checked={formData.spawnAnimals} onCheckedChange={(value) => updateField("spawnAnimals", value)}>
+        <CheckboxField
+          id="spawnAnimals"
+          checked={formData.spawnAnimals}
+          onCheckedChange={(value) => updateField("spawnAnimals", value)}
+        >
           Spawn Animals
         </CheckboxField>
-        <CheckboxField id="spawnMonsters" checked={formData.spawnMonsters} onCheckedChange={(value) => updateField("spawnMonsters", value)}>
+        <CheckboxField
+          id="spawnMonsters"
+          checked={formData.spawnMonsters}
+          onCheckedChange={(value) => updateField("spawnMonsters", value)}
+        >
           Spawn Monsters
         </CheckboxField>
-        <CheckboxField id="spawnNpcs" checked={formData.spawnNpcs} onCheckedChange={(value) => updateField("spawnNpcs", value)}>
+        <CheckboxField
+          id="spawnNpcs"
+          checked={formData.spawnNpcs}
+          onCheckedChange={(value) => updateField("spawnNpcs", value)}
+        >
           Spawn NPCs (Villagers)
         </CheckboxField>
       </div>

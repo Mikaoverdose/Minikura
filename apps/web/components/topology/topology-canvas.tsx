@@ -54,7 +54,7 @@ export function TopologyCanvas({ graph }: TopologyCanvasProps) {
   }, []);
 
   return (
-    <div className="h-[calc(100vh-250px)] min-h-[520px] w-full overflow-hidden rounded-sm border-2 border-foreground bg-background shadow-[6px_6px_0_color-mix(in_oklch,var(--foreground)_14%,transparent)]">
+    <div className="h-[70vh] min-h-[420px] w-full overflow-hidden rounded-sm border-2 border-foreground bg-background shadow-[6px_6px_0_color-mix(in_oklch,var(--foreground)_14%,transparent)] sm:h-[calc(100vh-250px)] sm:min-h-[520px]">
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -93,18 +93,18 @@ export function TopologyCanvas({ graph }: TopologyCanvasProps) {
           showZoom
           showFitView
           showInteractive
-          className="border bg-card/95 shadow-md backdrop-blur-sm"
+          className="hidden border bg-card/95 shadow-md backdrop-blur-sm sm:block"
         />
         <MiniMap
           nodeColor={(node: any) => {
             const data = node.data as TopologyNodeData;
             const colors = {
-              healthy: "#22c55e",
-              degraded: "#eab308",
-              unhealthy: "#ef4444",
-              unknown: "#94a3b8",
+              healthy: "var(--success)",
+              degraded: "var(--warning)",
+              unhealthy: "var(--destructive)",
+              unknown: "var(--muted-foreground)",
             };
-            return colors[data.status] || "#94a3b8";
+            return colors[data.status] || "var(--muted-foreground)";
           }}
           maskColor="color-mix(in oklch, var(--foreground) 8%, transparent)"
           className="border bg-card/95 shadow-md backdrop-blur-sm"

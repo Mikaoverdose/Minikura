@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "@elysiajs/eden": "^1.4.9",
+    "@gsap/react": "^2.1.2",
     "@hookform/resolvers": "^5.7.1",
     "@minikura/api": "workspace:*",
     "@minikura/backend": "workspace:*",
@@ -53,6 +54,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "elysia": "^1.4.29",
+    "gsap": "^3.15.0",
     "lucide-react": "^1.31.0",
     "next": "^16.3.0",
     "next-themes": "^0.4.6",

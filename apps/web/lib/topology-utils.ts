@@ -71,7 +71,7 @@ function parseProxyServerConnections(
 ): string[] {
   const backends = backendsByProxyId?.get(proxy.id);
   if (!backends) {
-    return allServers.map((s) => s.id);
+    return [];
   }
   const known = new Set(allServers.map((s) => s.id));
   return backends.filter((id) => known.has(id));

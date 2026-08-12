@@ -92,7 +92,7 @@ export interface ServerFormData {
 
 export type UpdateServerField = <K extends keyof ServerFormData>(
   key: K,
-  value: ServerFormData[K],
+  value: ServerFormData[K]
 ) => void;
 
 export interface ServerFormPanelProps {

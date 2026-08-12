@@ -1,12 +1,13 @@
 "use client";
 
-import { Network } from "lucide-react";
+import { Network, RefreshCw } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { PageHeader, PageShell, StatePanel } from "@/components/page-layout";
 import { TopologyCanvas } from "@/components/topology/topology-canvas";
 import { useTopologyData } from "@/hooks/use-topology-data";
 
 export default function TopologyPage() {
-  const { graph, loading, error } = useTopologyData();
+  const { graph, loading, error, refreshing, refresh } = useTopologyData();
 
   const header = (
     <PageHeader
@@ -25,8 +26,12 @@ export default function TopologyPage() {
     <PageShell>
       {header}
       {loading ? (
-        <StatePanel loading title="Loading topology..." className="h-[calc(100vh-250px)]" />
-      ) : error ? (
+        <StatePanel
+          loading
+          title="Loading topology..."
+          className="h-[70vh] sm:h-[calc(100vh-250px)]"
+        />
+      ) : error && !graph ? (
         <StatePanel
           title="Error loading topology"
           description={
@@ -36,16 +41,33 @@ export default function TopologyPage() {
             </>
           }
           tone="error"
-          className="h-[calc(100vh-250px)]"
+          className="h-[70vh] sm:h-[calc(100vh-250px)]"
+          action={<Button onClick={() => void refresh()}>Retry now</Button>}
         />
       ) : !graph || graph.nodes.length === 0 ? (
         <StatePanel
           title="No infrastructure found"
           description="Create a server to see it appear in the topology."
-          className="h-[calc(100vh-250px)]"
+          className="h-[70vh] sm:h-[calc(100vh-250px)]"
         />
       ) : (
-        <TopologyCanvas graph={graph} />
+        <div className="space-y-3">
+          {error && (
+            <div className="flex flex-col gap-2 border border-destructive/40 bg-destructive/10 p-3 text-sm sm:flex-row sm:items-center sm:justify-between">
+              <span>Refresh failed: {error}. Showing the last successful topology.</span>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={refreshing}
+                onClick={() => void refresh(true)}
+              >
+                <RefreshCw className={refreshing ? "animate-spin" : undefined} />
+                Retry
+              </Button>
+            </div>
+          )}
+          <TopologyCanvas graph={graph} />
+        </div>
       )}
     </PageShell>
   );

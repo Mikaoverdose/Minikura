@@ -106,8 +106,13 @@ export function ServerPanel({ formData, updateField }: ServerFormPanelProps) {
 
       <div className="grid grid-cols-2 gap-4">
         <Field id="mode" label="Game Mode">
-          <Select value={formData.mode} onValueChange={(value) => updateField("mode", toMode(value))}>
-            <SelectTrigger id="mode"><SelectValue /></SelectTrigger>
+          <Select
+            value={formData.mode}
+            onValueChange={(value) => updateField("mode", toMode(value))}
+          >
+            <SelectTrigger id="mode">
+              <SelectValue />
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value="survival">Survival</SelectItem>
               <SelectItem value="creative">Creative</SelectItem>
@@ -121,7 +126,9 @@ export function ServerPanel({ formData, updateField }: ServerFormPanelProps) {
             value={formData.difficulty}
             onValueChange={(value) => updateField("difficulty", toDifficulty(value))}
           >
-            <SelectTrigger id="difficulty"><SelectValue /></SelectTrigger>
+            <SelectTrigger id="difficulty">
+              <SelectValue />
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value="peaceful">Peaceful</SelectItem>
               <SelectItem value="easy">Easy</SelectItem>
@@ -156,19 +163,39 @@ export function ServerPanel({ formData, updateField }: ServerFormPanelProps) {
       </div>
 
       <div className="space-y-3">
-        <CheckboxField id="pvp" checked={formData.pvp} onCheckedChange={(value) => updateField("pvp", value)}>
+        <CheckboxField
+          id="pvp"
+          checked={formData.pvp}
+          onCheckedChange={(value) => updateField("pvp", value)}
+        >
           Enable PvP (Player vs Player)
         </CheckboxField>
-        <CheckboxField id="onlineMode" checked={formData.onlineMode} onCheckedChange={(value) => updateField("onlineMode", value)}>
+        <CheckboxField
+          id="onlineMode"
+          checked={formData.onlineMode}
+          onCheckedChange={(value) => updateField("onlineMode", value)}
+        >
           Online Mode (Requires authenticated Minecraft accounts)
         </CheckboxField>
-        <CheckboxField id="allowFlight" checked={formData.allowFlight} onCheckedChange={(value) => updateField("allowFlight", value)}>
+        <CheckboxField
+          id="allowFlight"
+          checked={formData.allowFlight}
+          onCheckedChange={(value) => updateField("allowFlight", value)}
+        >
           Allow Flight
         </CheckboxField>
-        <CheckboxField id="enableCommandBlock" checked={formData.enableCommandBlock} onCheckedChange={(value) => updateField("enableCommandBlock", value)}>
+        <CheckboxField
+          id="enableCommandBlock"
+          checked={formData.enableCommandBlock}
+          onCheckedChange={(value) => updateField("enableCommandBlock", value)}
+        >
           Enable Command Blocks
         </CheckboxField>
-        <CheckboxField id="hardcore" checked={formData.hardcore} onCheckedChange={(value) => updateField("hardcore", value)}>
+        <CheckboxField
+          id="hardcore"
+          checked={formData.hardcore}
+          onCheckedChange={(value) => updateField("hardcore", value)}
+        >
           Hardcore Mode (Permanent Death)
         </CheckboxField>
       </div>

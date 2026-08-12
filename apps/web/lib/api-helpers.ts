@@ -1,12 +1,13 @@
 import { api } from "@/lib/api-client";
 
 type ReverseProxyApi = {
-  get: () => Promise<{ data?: unknown }>;
+  get: () => Promise<{ data?: unknown; error?: unknown }>;
   (params: {
     id: string;
   }): {
     delete: () => Promise<{ data?: unknown; error?: unknown }>;
-    "connection-info": { get: () => Promise<{ data?: unknown }> };
+    patch: (body: unknown) => Promise<{ data?: unknown; error?: unknown }>;
+    "connection-info": { get: () => Promise<{ data?: unknown; error?: unknown }> };
   };
 };
 

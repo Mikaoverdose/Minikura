@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { BrandLockup } from "@/components/brand";
+import { FadeIn } from "@/components/motion";
 import { FullScreenLoader } from "@/components/page-layout";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -38,6 +39,7 @@ type NavigationGroup = {
     icon: LucideIcon;
     label: string;
     context: string;
+    adminOnly?: boolean;
   }>;
 };
 
@@ -45,14 +47,34 @@ const navigation: NavigationGroup[] = [
   {
     label: "Operations",
     items: [
-      { href: "/dashboard/users", icon: Users, label: "Users", context: "Identity" },
+      {
+        href: "/dashboard/users",
+        icon: Users,
+        label: "Users",
+        context: "Identity",
+        adminOnly: true,
+      },
       { href: "/dashboard/servers", icon: Server, label: "Servers", context: "Workloads" },
-      { href: "/dashboard/topology", icon: GitGraph, label: "Network", context: "Topology" },
+      {
+        href: "/dashboard/topology",
+        icon: GitGraph,
+        label: "Network",
+        context: "Topology",
+        adminOnly: true,
+      },
     ],
   },
   {
     label: "Kubernetes",
-    items: [{ href: "/dashboard/k8s", icon: Network, label: "Resources", context: "Cluster" }],
+    items: [
+      {
+        href: "/dashboard/k8s",
+        icon: Network,
+        label: "Resources",
+        context: "Cluster",
+        adminOnly: true,
+      },
+    ],
   },
 ];
 
@@ -64,10 +86,29 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!isPending && !session?.user) {
       router.replace("/login");
+      return;
     }
-  }, [session, isPending, router]);
+    if (
+      !isPending &&
+      session?.user.role !== "admin" &&
+      (pathname === "/dashboard/users" ||
+        pathname.startsWith("/dashboard/topology") ||
+        pathname.startsWith("/dashboard/k8s") ||
+        pathname.startsWith("/dashboard/servers/create") ||
+        pathname.startsWith("/dashboard/servers/edit"))
+    ) {
+      router.replace("/dashboard/servers");
+    }
+  }, [session, isPending, pathname, router]);
 
   if (isPending || !session?.user) return <FullScreenLoader />;
+  const isAdmin = session.user.role === "admin";
+  const visibleNavigation = navigation
+    .map((group) => ({
+      ...group,
+      items: group.items.filter((item) => isAdmin || !item.adminOnly),
+    }))
+    .filter((group) => group.items.length > 0);
 
   const handleSignOut = async () => {
     await signOut();
@@ -80,7 +121,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
       .map((n) => n[0])
       .join("")
       .toUpperCase() || "U";
-  const currentPage = navigation
+  const currentPage = visibleNavigation
     .flatMap((group) => group.items)
     .find((item) => pathname === item.href || pathname.startsWith(`${item.href}/`));
 
@@ -102,7 +143,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           />
         </SidebarHeader>
         <SidebarContent className="py-4">
-          {navigation.map((group) => (
+          {visibleNavigation.map((group) => (
             <SidebarGroup key={group.label} className="px-3">
               <SidebarGroupLabel className="font-mono text-[9px] uppercase tracking-[0.2em]">
                 {group.label}
@@ -164,7 +205,11 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
           </span>
           <ThemeToggle className="ml-auto" />
         </header>
-        <main className="min-w-0 flex-1 overflow-auto p-4 sm:p-6 lg:p-8">{children}</main>
+        <main className="min-w-0 flex-1 overflow-auto p-4 sm:p-6 lg:p-8">
+          <FadeIn key={pathname} y={10} duration={0.4}>
+            {children}
+          </FadeIn>
+        </main>
       </SidebarInset>
     </SidebarProvider>
   );

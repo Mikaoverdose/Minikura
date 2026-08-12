@@ -11,14 +11,14 @@ type ServerTableProps =
   | {
       type: "normal";
       servers: NormalServer[];
-      onEdit: (id: string) => void;
-      onDelete: (id: string) => void;
+      onEdit?: (id: string) => void;
+      onDelete?: (id: string) => void;
     }
   | {
       type: "proxy";
       servers: ReverseProxyServer[];
-      onEdit: (id: string) => void;
-      onDelete: (id: string) => void;
+      onEdit?: (id: string) => void;
+      onDelete?: (id: string) => void;
     };
 
 function RowActions({
@@ -29,27 +29,32 @@ function RowActions({
 }: {
   id: string;
   kind: string;
-  onEdit: (id: string) => void;
-  onDelete: (id: string) => void;
+  onEdit?: (id: string) => void;
+  onDelete?: (id: string) => void;
 }) {
+  if (!onEdit && !onDelete) return null;
   return (
     <TableActions>
-      <Button
-        variant="ghost"
-        size="icon"
-        onClick={() => onEdit(id)}
-        aria-label={`Edit ${kind} ${id}`}
-      >
-        <Pencil />
-      </Button>
-      <Button
-        variant="ghost"
-        size="icon"
-        onClick={() => onDelete(id)}
-        aria-label={`Delete ${kind} ${id}`}
-      >
-        <Trash2 />
-      </Button>
+      {onEdit && (
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => onEdit(id)}
+          aria-label={`Edit ${kind} ${id}`}
+        >
+          <Pencil />
+        </Button>
+      )}
+      {onDelete && (
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => onDelete(id)}
+          aria-label={`Delete ${kind} ${id}`}
+        >
+          <Trash2 />
+        </Button>
+      )}
     </TableActions>
   );
 }

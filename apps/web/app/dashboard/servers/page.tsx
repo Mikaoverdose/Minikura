@@ -9,9 +9,12 @@ import { ResourceSection } from "@/components/section-card";
 import { ServerTable } from "@/components/servers/server-table";
 import { Button } from "@/components/ui/button";
 import { useServerList } from "@/hooks/use-server-list";
+import { useSession } from "@/lib/auth-client";
 
 export default function ServersPage() {
   const router = useRouter();
+  const { data: session } = useSession();
+  const isAdmin = session?.user.role === "admin";
   const { normalServers, reverseProxies, loading, error, deleteServer } = useServerList();
   const [deleteTarget, setDeleteTarget] = useState<{
     id: string;
@@ -34,10 +37,12 @@ export default function ServersPage() {
         title="Servers"
         description="Provision Minecraft runtimes and route traffic through edge proxies."
         actions={
-          <Button size="lg" onClick={() => router.push("/dashboard/servers/create")}>
-            <Plus className="size-4" />
-            Create Server
-          </Button>
+          isAdmin ? (
+            <Button size="lg" onClick={() => router.push("/dashboard/servers/create")}>
+              <Plus className="size-4" />
+              Create Server
+            </Button>
+          ) : undefined
         }
       />
 
@@ -59,8 +64,8 @@ export default function ServersPage() {
             <ServerTable
               type="normal"
               servers={normalServers}
-              onEdit={(id) => router.push(`/dashboard/servers/edit/${id}`)}
-              onDelete={(id) => setDeleteTarget({ id, type: "normal" })}
+              onEdit={isAdmin ? (id) => router.push(`/dashboard/servers/edit/${id}`) : undefined}
+              onDelete={isAdmin ? (id) => setDeleteTarget({ id, type: "normal" }) : undefined}
             />
           </ResourceSection>
 
@@ -76,8 +81,8 @@ export default function ServersPage() {
             <ServerTable
               type="proxy"
               servers={reverseProxies}
-              onEdit={(id) => router.push(`/dashboard/servers/edit/${id}`)}
-              onDelete={(id) => setDeleteTarget({ id, type: "proxy" })}
+              onEdit={isAdmin ? (id) => router.push(`/dashboard/servers/edit/${id}`) : undefined}
+              onDelete={isAdmin ? (id) => setDeleteTarget({ id, type: "proxy" }) : undefined}
             />
           </ResourceSection>
         </>

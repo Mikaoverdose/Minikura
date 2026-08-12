@@ -58,7 +58,7 @@ export function TopologyToolbar({ filters, onFiltersChange, metadata }: Topology
   ];
 
   return (
-    <div className="flex min-w-[280px] max-w-[calc(100vw-5rem)] flex-col gap-3 rounded-sm border-2 border-foreground bg-card/95 p-3 shadow-[5px_5px_0_color-mix(in_oklch,var(--foreground)_16%,transparent)] backdrop-blur-sm sm:min-w-[350px] sm:p-4">
+    <div className="flex w-[calc(100vw-4.5rem)] max-w-[350px] flex-col gap-3 rounded-sm border-2 border-foreground bg-card/95 p-3 shadow-[5px_5px_0_color-mix(in_oklch,var(--foreground)_16%,transparent)] backdrop-blur-sm sm:w-[350px] sm:p-4">
       <div className="grid grid-cols-3 gap-2">
         {stats.map(({ label, value, icon: Icon }) => (
           <div key={label} className="flex flex-col items-center border bg-muted/50 p-2">
@@ -100,7 +100,7 @@ export function TopologyToolbar({ filters, onFiltersChange, metadata }: Topology
             Filters
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-80" align="start">
+        <PopoverContent className="w-[calc(100vw-3rem)] max-w-80" align="start">
           <div className="space-y-4">
             <div>
               <h4 className="font-semibold mb-3">Show/Hide</h4>

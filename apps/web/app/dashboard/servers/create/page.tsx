@@ -56,11 +56,11 @@ export default function CreateServerPage() {
         title="Server Configuration"
         description="Complete configuration for the itzg/minecraft-server workload."
       >
-          <ServerForm
-            onSubmit={handleSubmit}
-            onCancel={() => router.push("/dashboard/servers")}
-            submitLabel="Create Server"
-          />
+        <ServerForm
+          onSubmit={handleSubmit}
+          onCancel={() => router.push("/dashboard/servers")}
+          submitLabel="Create Server"
+        />
       </SectionCard>
     </PageShell>
   );

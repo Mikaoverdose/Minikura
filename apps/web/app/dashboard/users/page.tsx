@@ -1,7 +1,8 @@
 "use client";
 
 import { Ban, CheckCircle, Edit, ShieldCheck, Trash2, UserRoundCheck, Users } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { getErrorMessage } from "@minikura/shared/errors";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { DataTable, type DataTableColumn } from "@/components/data-table";
 import { PageHeader, PageShell, StatePanel } from "@/components/page-layout";
@@ -36,11 +37,26 @@ type User = {
   name: string;
   email: string;
   role: string;
-  createdAt: Date;
+  createdAt: Date | string;
   emailVerified: boolean;
   isSuspended: boolean;
-  suspendedUntil: Date | null;
+  banned: boolean;
+  suspendedUntil: Date | string | null;
 };
+
+function formatDateTime(value: Date | string): string {
+  return new Intl.DateTimeFormat(undefined, {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZoneName: "short",
+  }).format(new Date(value));
+}
+
+function localDateTimeMinimum(): string {
+  const now = new Date(Date.now() + 60_000);
+  const local = new Date(now.getTime() - now.getTimezoneOffset() * 60_000);
+  return local.toISOString().slice(0, 16);
+}
 
 export default function UsersPage() {
   const { data: session } = useSession();
@@ -49,16 +65,23 @@ export default function UsersPage() {
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [suspendingUser, setSuspendingUser] = useState<User | null>(null);
   const [deleteUser, setDeleteUser] = useState<User | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [pendingAction, setPendingAction] = useState<string | null>(null);
+  const fetchSequence = useRef(0);
 
   const fetchUsers = useCallback(async () => {
+    const sequence = ++fetchSequence.current;
+    setLoading(true);
+    setError(null);
     try {
       const { data, error } = await api.api.users.get();
-      if (!error && data) {
-        setUsers(data);
-      }
-    } catch (_error) {
+      if (error) throw error;
+      if (!data) throw new Error("The user directory returned no data");
+      if (sequence === fetchSequence.current) setUsers(data);
+    } catch (requestError) {
+      if (sequence === fetchSequence.current) setError(getErrorMessage(requestError));
     } finally {
-      setLoading(false);
+      if (sequence === fetchSequence.current) setLoading(false);
     }
   }, []);
 
@@ -72,19 +95,32 @@ export default function UsersPage() {
 
     const formData = new FormData(e.currentTarget);
     const name = formData.get("name") as string;
-    const role = formData.get("role") as string;
+    const role =
+      editingUser.id === session?.user?.id
+        ? editingUser.role
+        : String(formData.get("role") || editingUser.role);
 
+    if (editingUser.id === session?.user?.id && role !== "admin") {
+      setError("You cannot remove your own administrator access.");
+      return;
+    }
+
+    setPendingAction(`edit:${editingUser.id}`);
+    setError(null);
     try {
       const { error } = await api.api.users({ id: editingUser.id }).patch({
         name,
         role: role as "admin" | "user",
       });
 
-      if (!error) {
-        await fetchUsers();
-        setEditingUser(null);
-      }
-    } catch (_error) {}
+      if (error) throw error;
+      setEditingUser(null);
+      await fetchUsers();
+    } catch (requestError) {
+      setError(getErrorMessage(requestError));
+    } finally {
+      setPendingAction(null);
+    }
   };
 
   const handleSuspend = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -94,46 +130,81 @@ export default function UsersPage() {
     const formData = new FormData(e.currentTarget);
     const suspendedUntil = formData.get("suspendedUntil") as string;
 
+    if (suspendingUser.id === session?.user?.id) {
+      setError("You cannot suspend your own account.");
+      return;
+    }
+
+    const suspensionDate = suspendedUntil ? new Date(suspendedUntil) : null;
+    if (
+      suspensionDate &&
+      (Number.isNaN(suspensionDate.getTime()) || suspensionDate <= new Date())
+    ) {
+      setError("Suspension end time must be in the future.");
+      return;
+    }
+
+    setPendingAction(`suspend:${suspendingUser.id}`);
+    setError(null);
     try {
       const { error } = await getUserApi(suspendingUser.id).suspension.patch({
         isSuspended: true,
-        suspendedUntil: suspendedUntil || null,
+        suspendedUntil: suspensionDate?.toISOString() || null,
       });
 
-      if (!error) {
-        await fetchUsers();
-        setSuspendingUser(null);
-      }
-    } catch (_error) {}
+      if (error) throw error;
+      setSuspendingUser(null);
+      await fetchUsers();
+    } catch (requestError) {
+      setError(getErrorMessage(requestError));
+    } finally {
+      setPendingAction(null);
+    }
   };
 
   const handleUnsuspend = async (userId: string) => {
+    setPendingAction(`unsuspend:${userId}`);
+    setError(null);
     try {
       const { error } = await getUserApi(userId).suspension.patch({
         isSuspended: false,
         suspendedUntil: null,
       });
 
-      if (!error) {
-        await fetchUsers();
-      }
-    } catch (_error) {}
+      if (error) throw error;
+      await fetchUsers();
+    } catch (requestError) {
+      setError(getErrorMessage(requestError));
+    } finally {
+      setPendingAction(null);
+    }
   };
 
   const handleDelete = async () => {
     if (!deleteUser) return;
+    if (deleteUser.id === session?.user?.id) {
+      setError("You cannot delete your own account.");
+      setDeleteUser(null);
+      return;
+    }
 
+    setPendingAction(`delete:${deleteUser.id}`);
+    setError(null);
     try {
       const { error } = await api.api.users({ id: deleteUser.id }).delete();
 
-      if (!error) {
-        await fetchUsers();
-        setDeleteUser(null);
-      }
-    } catch (_error) {}
+      if (error) throw error;
+      setDeleteUser(null);
+      await fetchUsers();
+    } catch (requestError) {
+      setError(getErrorMessage(requestError));
+    } finally {
+      setPendingAction(null);
+    }
   };
 
   const isUserSuspended = (user: User): boolean => {
+    if (user.banned) return true;
     if (!user.isSuspended) return false;
     if (user.suspendedUntil && new Date(user.suspendedUntil) <= new Date()) {
       return false;
@@ -162,8 +233,8 @@ export default function UsersPage() {
       cell: (user) =>
         isUserSuspended(user) ? (
           <StatusBadge tone="error">
-            Suspended
-            {user.suspendedUntil && ` until ${new Date(user.suspendedUntil).toLocaleDateString()}`}
+            {user.banned ? "Banned" : "Suspended"}
+            {!user.banned && user.suspendedUntil && ` until ${formatDateTime(user.suspendedUntil)}`}
           </StatusBadge>
         ) : (
           <StatusBadge tone={user.emailVerified ? "success" : "warning"}>
@@ -187,15 +258,17 @@ export default function UsersPage() {
           <Button
             variant="ghost"
             size="icon"
+            disabled={pendingAction !== null}
             onClick={() => setEditingUser(user)}
             aria-label={`Edit ${user.name}`}
           >
             <Edit />
           </Button>
-          {isUserSuspended(user) ? (
+          {user.banned ? null : isUserSuspended(user) ? (
             <Button
               variant="ghost"
               size="icon"
+              disabled={pendingAction !== null}
               onClick={() => handleUnsuspend(user.id)}
               aria-label={`Restore ${user.name}`}
             >
@@ -205,6 +278,7 @@ export default function UsersPage() {
             <Button
               variant="ghost"
               size="icon"
+              disabled={user.id === session?.user?.id || pendingAction !== null}
               onClick={() => setSuspendingUser(user)}
               aria-label={`Suspend ${user.name}`}
             >
@@ -214,7 +288,7 @@ export default function UsersPage() {
           <Button
             variant="ghost"
             size="icon"
-            disabled={user.id === session?.user?.id}
+            disabled={user.id === session?.user?.id || pendingAction !== null}
             onClick={() => setDeleteUser(user)}
             aria-label={`Delete ${user.name}`}
           >
@@ -253,6 +327,18 @@ export default function UsersPage() {
         }
       />
 
+      {error && !loading && (
+        <div
+          role="alert"
+          className="flex flex-col gap-3 border border-destructive/50 bg-destructive/10 p-4 text-sm sm:flex-row sm:items-center sm:justify-between"
+        >
+          <span>{error}</span>
+          <Button variant="outline" size="sm" onClick={() => void fetchUsers()}>
+            Retry
+          </Button>
+        </div>
+      )}
+
       {loading ? (
         <StatePanel loading title="Loading directory..." className="h-64" />
       ) : (
@@ -278,7 +364,11 @@ export default function UsersPage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="role">Role</Label>
-                <Select name="role" defaultValue={editingUser?.role}>
+                <Select
+                  name="role"
+                  defaultValue={editingUser?.role}
+                  disabled={editingUser?.id === session?.user?.id}
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -293,7 +383,9 @@ export default function UsersPage() {
               <Button type="button" variant="outline" onClick={() => setEditingUser(null)}>
                 Cancel
               </Button>
-              <Button type="submit">Save Changes</Button>
+              <Button type="submit" disabled={pendingAction !== null}>
+                Save Changes
+              </Button>
             </DialogFooter>
           </form>
         </DialogContent>
@@ -315,6 +407,7 @@ export default function UsersPage() {
                   id="suspendedUntil"
                   name="suspendedUntil"
                   type="datetime-local"
+                  min={localDateTimeMinimum()}
                   placeholder="Leave empty for indefinite suspension"
                 />
                 <p className="text-sm text-muted-foreground">
@@ -326,7 +419,7 @@ export default function UsersPage() {
               <Button type="button" variant="outline" onClick={() => setSuspendingUser(null)}>
                 Cancel
               </Button>
-              <Button type="submit" variant="destructive">
+              <Button type="submit" variant="destructive" disabled={pendingAction !== null}>
                 Suspend User
               </Button>
             </DialogFooter>

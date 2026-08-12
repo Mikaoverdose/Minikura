@@ -1,6 +1,6 @@
 "use client";
 
-import type { NormalServer, UpdateServerRequest } from "@minikura/api";
+import type { NormalServer, ReverseProxyServer, UpdateServerRequest } from "@minikura/api";
 import { ArrowLeft } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -19,6 +19,7 @@ export default function EditServerPage() {
 
   const [loading, setLoading] = useState(true);
   const [serverData, setServerData] = useState<NormalServer | null>(null);
+  const [resourceKind, setResourceKind] = useState<"server" | "proxy">("server");
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -32,6 +33,7 @@ export default function EditServerPage() {
           const server = servers.find((s) => s.id === serverId);
           if (server) {
             setServerData(server);
+            setResourceKind("server");
             setLoading(false);
             return;
           }
@@ -39,10 +41,11 @@ export default function EditServerPage() {
 
         const proxyResponse = await getReverseProxyApi().get();
         if (proxyResponse.data) {
-          const proxies = proxyResponse.data as unknown as NormalServer[];
+          const proxies = proxyResponse.data as unknown as ReverseProxyServer[];
           const proxy = proxies.find((p) => p.id === serverId);
           if (proxy) {
-            setServerData(proxy);
+            setServerData(proxy as unknown as NormalServer);
+            setResourceKind("proxy");
             setLoading(false);
             return;
           }
@@ -66,7 +69,18 @@ export default function EditServerPage() {
 
     const payload: UpdateServerRequest = toCommonServerRequestFields(data);
 
-    const response = await api.api.servers({ id: serverId }).patch(payload);
+    const response =
+      resourceKind === "server"
+        ? await api.api.servers({ id: serverId }).patch(payload)
+        : await getReverseProxyApi()({ id: serverId }).patch({
+            description: payload.description,
+            listen_port: payload.listen_port,
+            service_type: payload.service_type,
+            node_port: payload.node_port,
+            memory: payload.memory,
+            cpu_request: payload.cpu_request,
+            cpu_limit: payload.cpu_limit,
+          });
 
     if (response.error) {
       const errorMsg =
@@ -95,10 +109,7 @@ export default function EditServerPage() {
         tone="error"
         className="min-h-[50vh]"
         action={
-          <Button
-            variant="outline"
-            onClick={() => router.push("/dashboard/servers")}
-          >
+          <Button variant="outline" onClick={() => router.push("/dashboard/servers")}>
             <ArrowLeft className="size-4" />
             Back to Servers
           </Button>
@@ -127,12 +138,12 @@ export default function EditServerPage() {
         title="Server Configuration"
         description="Modify settings for your Minecraft server"
       >
-          <ServerForm
-            initialData={initialData}
-            onSubmit={handleSubmit}
-            onCancel={() => router.push("/dashboard/servers")}
-            submitLabel="Save Changes"
-          />
+        <ServerForm
+          initialData={initialData}
+          onSubmit={handleSubmit}
+          onCancel={() => router.push("/dashboard/servers")}
+          submitLabel="Save Changes"
+        />
       </SectionCard>
     </PageShell>
   );

@@ -150,7 +150,7 @@ export default function K8sResourcesPage() {
         {pageHeader}
         <StatePanel
           title="Kubernetes not connected"
-          icon={<AlertCircle className="size-6 text-yellow-500" />}
+          icon={<AlertCircle className="size-6 text-warning" />}
           description={
             <>
               <p>Ensure the operator is running with a valid Kubernetes configuration.</p>
