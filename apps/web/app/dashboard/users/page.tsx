@@ -1,10 +1,15 @@
 "use client";
 
-import { Ban, CheckCircle, Edit, Trash2 } from "lucide-react";
+import { Ban, CheckCircle, Edit, ShieldCheck, Trash2, UserRoundCheck, Users } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import { ConfirmDialog } from "@/components/confirm-dialog";
+import { DataTable, type DataTableColumn } from "@/components/data-table";
+import { PageHeader, PageShell, StatePanel } from "@/components/page-layout";
+import { SectionCard, TableActions } from "@/components/section-card";
+import { StatStrip } from "@/components/stat-strip";
+import { StatusBadge } from "@/components/status-badge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -22,14 +27,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { api } from "@/lib/api-client";
 import { getUserApi } from "@/lib/api-helpers";
 import { useSession } from "@/lib/auth-client";
@@ -39,10 +36,10 @@ type User = {
   name: string;
   email: string;
   role: string;
-  createdAt: string;
+  createdAt: Date;
   emailVerified: boolean;
   isSuspended: boolean;
-  suspendedUntil: string | null;
+  suspendedUntil: Date | null;
 };
 
 export default function UsersPage() {
@@ -55,9 +52,9 @@ export default function UsersPage() {
 
   const fetchUsers = useCallback(async () => {
     try {
-      const { data } = await api.api.users.get();
-      if (data && typeof data === "object" && "users" in data) {
-        setUsers(data.users as User[]);
+      const { data, error } = await api.api.users.get();
+      if (!error && data) {
+        setUsers(data);
       }
     } catch (_error) {
     } finally {
@@ -144,104 +141,128 @@ export default function UsersPage() {
     return true;
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-muted-foreground">Loading...</div>
-      </div>
-    );
-  }
+  const columns: readonly DataTableColumn<User>[] = [
+    { id: "name", header: "Name", cell: (user) => user.name, className: "font-bold" },
+    {
+      id: "email",
+      header: "Email",
+      cell: (user) => user.email,
+      className: "font-mono text-xs text-muted-foreground",
+    },
+    {
+      id: "role",
+      header: "Role",
+      cell: (user) => (
+        <Badge variant={user.role === "admin" ? "default" : "secondary"}>{user.role}</Badge>
+      ),
+    },
+    {
+      id: "status",
+      header: "Status",
+      cell: (user) =>
+        isUserSuspended(user) ? (
+          <StatusBadge tone="error">
+            Suspended
+            {user.suspendedUntil && ` until ${new Date(user.suspendedUntil).toLocaleDateString()}`}
+          </StatusBadge>
+        ) : (
+          <StatusBadge tone={user.emailVerified ? "success" : "warning"}>
+            {user.emailVerified ? "Active" : "Unverified"}
+          </StatusBadge>
+        ),
+    },
+    {
+      id: "created",
+      header: "Created",
+      cell: (user) => new Date(user.createdAt).toLocaleDateString(),
+      className: "text-muted-foreground",
+    },
+    {
+      id: "actions",
+      header: "Actions",
+      headerClassName: "text-right",
+      className: "text-right",
+      cell: (user) => (
+        <TableActions>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setEditingUser(user)}
+            aria-label={`Edit ${user.name}`}
+          >
+            <Edit />
+          </Button>
+          {isUserSuspended(user) ? (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => handleUnsuspend(user.id)}
+              aria-label={`Restore ${user.name}`}
+            >
+              <CheckCircle />
+            </Button>
+          ) : (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setSuspendingUser(user)}
+              aria-label={`Suspend ${user.name}`}
+            >
+              <Ban />
+            </Button>
+          )}
+          <Button
+            variant="ghost"
+            size="icon"
+            disabled={user.id === session?.user?.id}
+            onClick={() => setDeleteUser(user)}
+            aria-label={`Delete ${user.name}`}
+          >
+            <Trash2 />
+          </Button>
+        </TableActions>
+      ),
+    },
+  ];
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">User Management</h1>
-        <p className="text-muted-foreground mt-1">Manage user accounts and permissions</p>
-      </div>
+    <PageShell>
+      <PageHeader
+        eyebrow="Directory"
+        title="Users"
+        description="Control operator access, roles, and account status."
+        actions={
+          !loading && (
+            <StatStrip
+              items={[
+                { label: "Total", value: users.length, icon: Users },
+                {
+                  label: "Admins",
+                  value: users.filter((user) => user.role === "admin").length,
+                  icon: ShieldCheck,
+                },
+                {
+                  label: "Active",
+                  value: users.filter((user) => !isUserSuspended(user)).length,
+                  icon: UserRoundCheck,
+                  tone: "positive",
+                },
+              ]}
+            />
+          )
+        }
+      />
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Users</CardTitle>
-          <CardDescription>All registered users in the system</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Created</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {users.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell className="font-medium">{user.name}</TableCell>
-                    <TableCell>{user.email}</TableCell>
-                    <TableCell>
-                      <Badge variant={user.role === "admin" ? "default" : "secondary"}>
-                        {user.role}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-2">
-                        {isUserSuspended(user) ? (
-                          <Badge variant="destructive">
-                            Suspended
-                            {user.suspendedUntil &&
-                              ` until ${new Date(user.suspendedUntil).toLocaleDateString()}`}
-                          </Badge>
-                        ) : (
-                          <Badge variant={user.emailVerified ? "default" : "outline"}>
-                            {user.emailVerified ? "Active" : "Unverified"}
-                          </Badge>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>{new Date(user.createdAt).toLocaleDateString()}</TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex gap-2 justify-end">
-                        <Button variant="ghost" size="icon" onClick={() => setEditingUser(user)}>
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        {isUserSuspended(user) ? (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleUnsuspend(user.id)}
-                          >
-                            <CheckCircle className="h-4 w-4" />
-                          </Button>
-                        ) : (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => setSuspendingUser(user)}
-                          >
-                            <Ban className="h-4 w-4" />
-                          </Button>
-                        )}
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          disabled={user.id === session?.user?.id}
-                          onClick={() => setDeleteUser(user)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
+      {loading ? (
+        <StatePanel loading title="Loading directory..." className="h-64" />
+      ) : (
+        <SectionCard
+          title="Access Registry"
+          description="All identities authorized in this control plane."
+        >
+          <DataTable data={users} columns={columns} getRowKey={(user) => user.id} />
+        </SectionCard>
+      )}
 
       <Dialog open={!!editingUser} onOpenChange={() => setEditingUser(null)}>
         <DialogContent>
@@ -313,24 +334,16 @@ export default function UsersPage() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={!!deleteUser} onOpenChange={() => setDeleteUser(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete User</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete {deleteUser?.name}? This action cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteUser(null)}>
-              Cancel
-            </Button>
-            <Button variant="destructive" onClick={handleDelete}>
-              Delete
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
+      <ConfirmDialog
+        open={!!deleteUser}
+        title="Delete User"
+        description={
+          <>Are you sure you want to delete {deleteUser?.name}? This action cannot be undone.</>
+        }
+        confirmLabel="Delete"
+        onConfirm={handleDelete}
+        onOpenChange={(open) => !open && setDeleteUser(null)}
+      />
+    </PageShell>
   );
 }
