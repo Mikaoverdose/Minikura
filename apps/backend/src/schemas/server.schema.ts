@@ -50,6 +50,7 @@ export const createServerSchema = z.object({
   motd: z.string().optional(),
   level_seed: z.string().optional(),
   level_type: z.string().optional(),
+  running: z.boolean().optional(),
 });
 
 export const updateServerSchema = createServerSchema.omit({ id: true, type: true }).partial();

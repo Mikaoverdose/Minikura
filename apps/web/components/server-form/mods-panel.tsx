@@ -3,6 +3,7 @@ import { Input } from "@/components/ui/input";
 import { TabsContent } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { CheckboxField, Field } from "./fields";
+import { ArtifactSelector } from "./artifact-selector";
 import type { ServerFormPanelProps } from "./types";
 
 export function ModsPanel({ formData, updateField }: ServerFormPanelProps) {
@@ -10,6 +11,9 @@ export function ModsPanel({ formData, updateField }: ServerFormPanelProps) {
     <TabsContent value="mods" className="space-y-4 mt-4">
       {formData.type === "CUSTOM" && (
         <FormNotice>Mods/plugins automation is intended for Vanilla/Paper workflows.</FormNotice>
+      )}
+      {["PAPER", "SPIGOT", "PURPUR"].includes(formData.type) && (
+        <ArtifactSelector formData={formData} updateField={updateField} />
       )}
       <Field
         id="plugins"

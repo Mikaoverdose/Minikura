@@ -153,6 +153,37 @@ func TestStatelessHasNoDataVolume(t *testing.T) {
 	}
 }
 
+func TestMinecraftUsesPersistentConsolePipe(t *testing.T) {
+	podSpec := minecraftPodSpec(testServer(), true)
+	container := podSpec.Containers[0]
+
+	if len(container.Command) != 2 || container.Command[0] != "/bin/sh" {
+		t.Fatalf("command = %v, want shell wrapper", container.Command)
+	}
+	if len(container.Args) != 1 || container.Args[0] != "rm -f /tmp/minikura-console && mkfifo /tmp/minikura-console && exec 3<>/tmp/minikura-console && exec /start <&3" {
+		t.Fatalf("args = %v, want persistent console pipe", container.Args)
+	}
+}
+
+func TestStoppedServerHasZeroReplicas(t *testing.T) {
+	mc := testServer()
+	stopped := false
+	mc.Spec.Running = &stopped
+
+	dep := MinecraftDeployment(mc)
+	if dep.Spec.Replicas == nil || *dep.Spec.Replicas != 0 {
+		t.Fatalf("deployment replicas = %v, want 0", dep.Spec.Replicas)
+	}
+
+	sts, err := MinecraftStatefulSet(mc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if sts.Spec.Replicas == nil || *sts.Spec.Replicas != 0 {
+		t.Fatalf("statefulset replicas = %v, want 0", sts.Spec.Replicas)
+	}
+}
+
 func TestMinecraftConfigMap(t *testing.T) {
 	cm := MinecraftConfigMap(testServer())
 	if cm.Name != "minecraft-smp-config" {

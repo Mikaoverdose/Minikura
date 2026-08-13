@@ -91,6 +91,35 @@ kubectl wait --for=condition=Ready node --all --timeout=120s \
 echo "==> Creating minikura namespace..."
 kubectl create namespace minikura --dry-run=client -o yaml | kubectl apply -f - 2>/dev/null || true
 
+# Pods run inside k3s while the backend runs in the outer devcontainer. Expose
+# the node address under the same service name used by production manifests.
+echo "==> Exposing the development backend to k3s workloads..."
+K3S_NODE_IP=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}')
+kubectl apply -f - <<EOF
+apiVersion: v1
+kind: Service
+metadata:
+  name: minikura-backend
+  namespace: minikura
+spec:
+  ports:
+    - name: http
+      port: 3000
+      targetPort: 3000
+---
+apiVersion: v1
+kind: Endpoints
+metadata:
+  name: minikura-backend
+  namespace: minikura
+subsets:
+  - addresses:
+      - ip: ${K3S_NODE_IP}
+    ports:
+      - name: http
+        port: 3000
+EOF
+
 echo "==> Installing CRDs..."
 make -C /workspace/operator install-crds 2>/dev/null \
     || echo "[WARN] CRD install failed; run 'bun run operator:crds'"

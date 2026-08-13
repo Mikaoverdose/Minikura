@@ -13,6 +13,7 @@ export interface IK8sService {
   getPods(): Promise<any[]>;
   getPodsByLabel(labelSelector: string): Promise<any[]>;
   getPodInfo(podName: string): Promise<any>;
+  restartPod(podName: string): Promise<void>;
   getPodLogs(
     podName: string,
     options?: {

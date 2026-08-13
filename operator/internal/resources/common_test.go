@@ -16,12 +16,12 @@ func TestHeapMB(t *testing.T) {
 		heapPercent int32
 		want        string
 	}{
-		{"default percent when unset", 2048, 0, "1638M"},
+		{"default percent when unset", 2048, 0, "1228M"},
 		{"explicit percent", 2048, 50, "1024M"},
-		{"out of range falls back", 1024, 150, "819M"},
+		{"out of range falls back", 1024, 150, "614M"},
 		{"floor applies to tiny limits", 128, 80, "256M"},
 		{"full allocation", 1000, 100, "1000M"},
-		{"zero limit uses default memory", 0, 80, "1638M"},
+		{"zero limit uses default memory", 0, 60, "1228M"},
 	}
 
 	for _, tt := range tests {

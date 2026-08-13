@@ -95,6 +95,13 @@ export default function EditServerPage() {
       throw new Error(errorMsg);
     }
 
+    if (resourceKind === "server") {
+      const pluginResponse = await api.api.registry
+        .servers({ serverId })
+        .plugins.put({ artifactIds: data.registryArtifactIds });
+      if (pluginResponse.error) throw new Error("Server updated, but plugin deployment failed");
+    }
+
     router.push("/dashboard/servers");
   };
 

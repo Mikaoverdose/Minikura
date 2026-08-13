@@ -1,5 +1,6 @@
+import { labelKeys } from "@minikura/api";
 import { Elysia } from "elysia";
-import { serverService, wsService } from "../application/di-container";
+import { k8sService, serverService, wsService } from "../application/di-container";
 import { bearerToken, findApiKeyOwner } from "../middleware/api-key";
 import { assertAdmin, requireAuth } from "../middleware/auth-guards";
 import {
@@ -8,6 +9,7 @@ import {
   updateServerSchema,
 } from "../schemas/server.schema";
 import type { WebSocketClient } from "../services/websocket";
+import { operatorResourceName } from "../services/operator-resource-sync";
 
 export const serverRoutes = new Elysia({ prefix: "/servers" })
   .ws("/ws", {
@@ -78,5 +80,29 @@ export const serverRoutes = new Elysia({ prefix: "/servers" })
   .delete("/:id/env/:key", async ({ params, user }) => {
     assertAdmin(user);
     await serverService.deleteEnvVariable(params.id, params.key);
+    return { success: true };
+  })
+
+  .post("/:id/actions/start", async ({ params, user }) => {
+    assertAdmin(user);
+    return await serverService.updateServer(params.id, { running: true });
+  })
+
+  .post("/:id/actions/stop", async ({ params, user }) => {
+    assertAdmin(user);
+    return await serverService.updateServer(params.id, { running: false });
+  })
+
+  .post("/:id/actions/restart", async ({ params, user }) => {
+    assertAdmin(user);
+    const server = await serverService.getServerById(params.id);
+    if (!server.running) {
+      await serverService.updateServer(params.id, { running: true });
+      return { success: true };
+    }
+    const pods = await k8sService.getPodsByLabel(
+      `${labelKeys.serverId}=${operatorResourceName(params.id)}`
+    );
+    await Promise.all(pods.map((pod) => k8sService.restartPod(pod.name)));
     return { success: true };
   });

@@ -1,6 +1,6 @@
 "use client";
 
-import { GitGraph, LogOut, type LucideIcon, Network, Server, Users } from "lucide-react";
+import { GitGraph, LogOut, type LucideIcon, Network, Package, Server, Users } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
@@ -56,6 +56,13 @@ const navigation: NavigationGroup[] = [
       },
       { href: "/dashboard/servers", icon: Server, label: "Servers", context: "Workloads" },
       {
+        href: "/dashboard/plugins",
+        icon: Package,
+        label: "Plugins",
+        context: "Registry",
+        adminOnly: true,
+      },
+      {
         href: "/dashboard/topology",
         icon: GitGraph,
         label: "Network",
@@ -94,8 +101,10 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
       (pathname === "/dashboard/users" ||
         pathname.startsWith("/dashboard/topology") ||
         pathname.startsWith("/dashboard/k8s") ||
+        pathname.startsWith("/dashboard/plugins") ||
         pathname.startsWith("/dashboard/servers/create") ||
-        pathname.startsWith("/dashboard/servers/edit"))
+        pathname.startsWith("/dashboard/servers/edit") ||
+        pathname.startsWith("/dashboard/servers/manage"))
     ) {
       router.replace("/dashboard/servers");
     }

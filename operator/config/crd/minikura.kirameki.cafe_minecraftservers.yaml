@@ -3,7 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.20.0
+    controller-gen.kubebuilder.io/version: v0.21.0
   name: minecraftservers.minikura.kirameki.cafe
 spec:
   group: minikura.kirameki.cafe
@@ -220,7 +220,7 @@ spec:
               jvm:
                 properties:
                   heapPercent:
-                    default: 80
+                  default: 60
                     format: int32
                     maximum: 100
                     minimum: 1
@@ -300,6 +300,9 @@ spec:
                     minimum: 256
                     type: integer
                 type: object
+              running:
+                default: true
+                type: boolean
               serviceType:
                 default: ClusterIP
                 enum:

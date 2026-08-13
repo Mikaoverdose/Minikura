@@ -2,12 +2,10 @@
 
 import { ClipboardAddon } from "@xterm/addon-clipboard";
 import { FitAddon } from "@xterm/addon-fit";
-import { ImageAddon } from "@xterm/addon-image";
 import { LigaturesAddon } from "@xterm/addon-ligatures";
 import { SearchAddon } from "@xterm/addon-search";
 import { Unicode11Addon } from "@xterm/addon-unicode11";
 import { WebLinksAddon } from "@xterm/addon-web-links";
-import { WebglAddon } from "@xterm/addon-webgl";
 import { Terminal as XTerm } from "@xterm/xterm";
 import { useEffect, useRef, useState } from "react";
 import "@xterm/xterm/css/xterm.css";
@@ -16,7 +14,7 @@ type TerminalProps = {
   podName: string;
   container: string;
   shell?: string;
-  mode?: "shell" | "attach";
+  mode?: "shell" | "console";
   onClose?: () => void;
 };
 
@@ -89,14 +87,12 @@ export function Terminal({
     const searchAddon = new SearchAddon();
     const clipboardAddon = new ClipboardAddon();
     const unicode11Addon = new Unicode11Addon();
-    const imageAddon = new ImageAddon();
 
     term.loadAddon(fitAddon);
     term.loadAddon(webLinksAddon);
     term.loadAddon(searchAddon);
     term.loadAddon(clipboardAddon);
     term.loadAddon(unicode11Addon);
-    term.loadAddon(imageAddon);
 
     term.unicode.activeVersion = "11";
 
@@ -113,13 +109,6 @@ export function Terminal({
     fitAddonRef.current = fitAddon;
     searchAddonRef.current = searchAddon;
 
-    setTimeout(() => {
-      try {
-        const webglAddon = new WebglAddon();
-        term.loadAddon(webglAddon);
-      } catch (_e) {}
-    }, 100);
-
     term.attachCustomKeyEventHandler((event) => {
       if ((event.ctrlKey || event.metaKey) && event.key === "f") {
         event.preventDefault();
@@ -130,14 +119,19 @@ export function Terminal({
     });
 
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const wsUrl = `${protocol}//${window.location.hostname}:3000/api/terminal/exec?podName=${encodeURIComponent(podName)}&container=${encodeURIComponent(container)}&shell=${encodeURIComponent(shell)}&mode=${mode}`;
+    const wsUrl = new URL("/api/terminal/exec", window.location.origin);
+    wsUrl.protocol = protocol;
+    wsUrl.searchParams.set("podName", podName);
+    wsUrl.searchParams.set("container", container);
+    wsUrl.searchParams.set("shell", shell);
+    wsUrl.searchParams.set("mode", mode);
     const ws = new WebSocket(wsUrl);
     wsRef.current = ws;
 
     ws.onopen = () => {
       setConnected(true);
       term.writeln(
-        `\r\n\x1b[1;32mConnecting to ${mode === "attach" ? "container" : "shell"}...\x1b[0m\r\n`
+        `\r\n\x1b[1;32mConnecting to ${mode === "console" ? "Minecraft console" : "shell"}...\x1b[0m\r\n`
       );
 
       const { cols, rows } = term;
@@ -168,8 +162,11 @@ export function Terminal({
       setConnected(false);
     };
 
-    ws.onclose = () => {
-      term.writeln("\r\n\x1b[1;33mConnection closed\x1b[0m\r\n");
+    ws.onclose = (event) => {
+      const detail =
+        event.reason ||
+        (event.code === 1006 ? "Connection closed unexpectedly" : "Connection closed");
+      term.writeln(`\r\n\x1b[1;33m${detail} (${event.code})\x1b[0m\r\n`);
       setConnected(false);
     };
 

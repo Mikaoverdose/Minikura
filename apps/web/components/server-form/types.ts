@@ -78,6 +78,7 @@ export interface ServerFormData {
   autostopTimeoutInit: string;
   autostopPeriod: string;
   plugins?: string;
+  registryArtifactIds: string[];
   removeOldPlugins: boolean;
   spigetResources?: string;
   paperBuild?: string;

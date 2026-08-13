@@ -3,6 +3,7 @@ import { API_GROUP } from "@minikura/api";
 import { prisma, type ReverseProxyWithEnvVars, type ServerWithEnvVars } from "@minikura/db";
 import { buildKubeConfig } from "@minikura/shared/kube-auth";
 import { logger } from "../infrastructure/logger";
+import { PluginRegistryService } from "./plugin-registry";
 
 const API_VERSION = "v1alpha1";
 const FIELD_MANAGER = "minikura-backend";
@@ -50,6 +51,7 @@ export class OperatorResourceSync {
   private coreApi?: k8s.CoreV1Api;
   private customObjectsApi?: k8s.CustomObjectsApi;
   private syncing = false;
+  private readonly pluginRegistry = new PluginRegistryService();
 
   constructor() {
     try {
@@ -72,7 +74,9 @@ export class OperatorResourceSync {
     this.syncing = true;
     try {
       const [servers, proxies] = await Promise.all([
-        prisma.server.findMany({ include: { env_variables: true } }),
+        prisma.server.findMany({
+          include: { env_variables: true, plugins: { include: { artifact: true } } },
+        }),
         prisma.reverseProxyServer.findMany({ include: { env_variables: true } }),
       ]);
       const syncResults = await Promise.allSettled([
@@ -106,10 +110,10 @@ export class OperatorResourceSync {
   }
 
   async syncServerById(id: string): Promise<void> {
-    this.requireClients();
+    if (!this.coreApi || !this.customObjectsApi) return;
     const server = await prisma.server.findUnique({
       where: { id },
-      include: { env_variables: true },
+      include: { env_variables: true, plugins: { include: { artifact: true } } },
     });
     if (server) await this.syncServer(server);
   }
@@ -133,7 +137,11 @@ export class OperatorResourceSync {
     await this.deleteResource("reverseproxyservers", operatorResourceName(id));
   }
 
-  private async syncServer(server: ServerWithEnvVars): Promise<void> {
+  private async syncServer(
+    server: ServerWithEnvVars & {
+      plugins?: Array<{ enabled: boolean; artifact: { download_token: string } }>;
+    }
+  ): Promise<void> {
     const name = operatorResourceName(server.id);
     const secretName = `mc-${name}-api-key`;
     await this.upsertSecret(secretName, server.api_key, labels(server.id));
@@ -147,6 +155,7 @@ export class OperatorResourceSync {
       },
       spec: {
         type: server.type,
+        running: server.running,
         description: server.description ?? undefined,
         listenPort: server.listen_port,
         serviceType: serviceType(server.service_type),
@@ -163,7 +172,7 @@ export class OperatorResourceSync {
           opts: server.jvm_opts ?? undefined,
           useAikarFlags: server.use_aikar_flags,
           useMeowIceFlags: server.use_meowice_flags,
-          heapPercent: 80,
+          heapPercent: 60,
         },
         properties: {
           difficulty: server.difficulty,
@@ -175,11 +184,27 @@ export class OperatorResourceSync {
           levelSeed: server.level_seed ?? undefined,
           levelType: server.level_type ?? undefined,
         },
-        env: server.env_variables.map((entry) => ({ name: entry.key, value: entry.value })),
+        env: this.serverEnvironment(server),
         apiKeySecretRef: secretName,
       },
     });
     await this.deleteSecret(`${name}-api-key`);
+  }
+
+  private serverEnvironment(
+    server: ServerWithEnvVars & {
+      plugins?: Array<{ enabled: boolean; artifact: { download_token: string } }>;
+    }
+  ): Array<{ name: string; value: string }> {
+    const environment = new Map(server.env_variables.map((entry) => [entry.key, entry.value]));
+    const registryUrls = (server.plugins ?? [])
+      .filter((plugin) => plugin.enabled)
+      .map((plugin) => this.pluginRegistry.artifactUrl(plugin.artifact.download_token));
+    if (registryUrls.length > 0) {
+      const existing = environment.get("PLUGINS");
+      environment.set("PLUGINS", [existing, ...registryUrls].filter(Boolean).join(","));
+    }
+    return [...environment].map(([name, value]) => ({ name, value }));
   }
 
   private async syncReverseProxy(proxy: ReverseProxyWithEnvVars): Promise<void> {

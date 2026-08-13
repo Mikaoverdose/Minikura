@@ -60,12 +60,15 @@ type JVMOptions struct {
 
 	// +kubebuilder:validation:Minimum=1
 	// +kubebuilder:validation:Maximum=100
-	// +kubebuilder:default=80
+	// +kubebuilder:default=60
 	HeapPercent int32 `json:"heapPercent,omitempty"`
 }
 
 type MinecraftServerSpec struct {
 	Type ServerKind `json:"type"`
+
+	// +kubebuilder:default=true
+	Running *bool `json:"running,omitempty"`
 
 	// +optional
 	Description string `json:"description,omitempty"`

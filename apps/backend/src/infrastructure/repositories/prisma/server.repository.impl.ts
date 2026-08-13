@@ -83,6 +83,7 @@ export class PrismaServerRepository implements ServerRepository {
         level_seed: input.level_seed ?? null,
         level_type: input.level_type ?? null,
         api_key: token,
+        running: input.running ?? true,
         env_variables: input.env_variables
           ? {
               create: input.env_variables.map((ev) => ({
@@ -135,6 +136,7 @@ export class PrismaServerRepository implements ServerRepository {
         motd: input.motd,
         level_seed: input.level_seed,
         level_type: input.level_type,
+        running: input.running,
       },
       include: { env_variables: true },
     });

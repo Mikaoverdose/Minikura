@@ -113,8 +113,12 @@ func minecraftPodSpec(mc *v1alpha1.MinecraftServer, stateful bool) corev1.PodSpe
 
 	return corev1.PodSpec{
 		Containers: []corev1.Container{{
-			Name:  "minecraft",
-			Image: MinecraftImage,
+			Name:    "minecraft",
+			Image:   MinecraftImage,
+			Command: []string{"/bin/sh", "-c"},
+			Args: []string{
+				"rm -f /tmp/minikura-console && mkfifo /tmp/minikura-console && exec 3<>/tmp/minikura-console && exec /start <&3",
+			},
 			Ports: []corev1.ContainerPort{{
 				Name:          "minecraft",
 				ContainerPort: ContainerPort,
@@ -132,10 +136,14 @@ func MinecraftDeployment(mc *v1alpha1.MinecraftServer) *appsv1.Deployment {
 	name := ServerName(mc.Name)
 	labels := ServerLabels(mc)
 
+	replicas := int32(1)
+	if mc.Spec.Running != nil && !*mc.Spec.Running {
+		replicas = 0
+	}
 	return &appsv1.Deployment{
 		ObjectMeta: ObjectMeta(name, mc.Namespace, labels),
 		Spec: appsv1.DeploymentSpec{
-			Replicas: ptr(int32(1)),
+			Replicas: ptr(replicas),
 			Selector: &metav1.LabelSelector{MatchLabels: SelectorLabels(name)},
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{Labels: labels},
@@ -158,11 +166,15 @@ func MinecraftStatefulSet(mc *v1alpha1.MinecraftServer) (*appsv1.StatefulSet, er
 		return nil, fmt.Errorf("invalid storageSize %q: %w", size, err)
 	}
 
+	replicas := int32(1)
+	if mc.Spec.Running != nil && !*mc.Spec.Running {
+		replicas = 0
+	}
 	return &appsv1.StatefulSet{
 		ObjectMeta: ObjectMeta(name, mc.Namespace, labels),
 		Spec: appsv1.StatefulSetSpec{
 			ServiceName: name,
-			Replicas:    ptr(int32(1)),
+			Replicas:    ptr(replicas),
 			Selector:    &metav1.LabelSelector{MatchLabels: SelectorLabels(name)},
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{Labels: labels},

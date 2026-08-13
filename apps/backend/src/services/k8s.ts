@@ -162,6 +162,15 @@ export class K8sService implements IK8sService {
     return this.resources.getPodInfo(podName);
   }
 
+  async restartPod(podName: string): Promise<void> {
+    this.ensureInitialized();
+    await this.coreApi.deleteNamespacedPod({
+      name: podName,
+      namespace: this.namespace,
+      propagationPolicy: "Foreground",
+    });
+  }
+
   async getServiceInfo(serviceName: string) {
     this.ensureInitialized();
     return this.resources.getServiceInfo(serviceName);

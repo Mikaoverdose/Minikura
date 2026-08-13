@@ -1,5 +1,5 @@
 import type { NormalServer, ReverseProxyServer } from "@minikura/api";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, SquareTerminal, Trash2 } from "lucide-react";
 import { DataTable, type DataTableColumn } from "@/components/data-table";
 import { TableActions } from "@/components/section-card";
 import { Badge } from "@/components/ui/badge";
@@ -12,6 +12,7 @@ type ServerTableProps =
       type: "normal";
       servers: NormalServer[];
       onEdit?: (id: string) => void;
+      onManage?: (id: string) => void;
       onDelete?: (id: string) => void;
     }
   | {
@@ -26,15 +27,27 @@ function RowActions({
   kind,
   onEdit,
   onDelete,
+  onManage,
 }: {
   id: string;
   kind: string;
   onEdit?: (id: string) => void;
   onDelete?: (id: string) => void;
+  onManage?: (id: string) => void;
 }) {
-  if (!onEdit && !onDelete) return null;
+  if (!onEdit && !onDelete && !onManage) return null;
   return (
     <TableActions>
+      {onManage && (
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => onManage(id)}
+          aria-label={`Manage ${kind} ${id}`}
+        >
+          <SquareTerminal />
+        </Button>
+      )}
       {onEdit && (
         <Button
           variant="ghost"
@@ -106,6 +119,7 @@ export function ServerTable(props: ServerTableProps) {
             id={server.id}
             kind="server"
             onEdit={props.onEdit}
+            onManage={props.onManage}
             onDelete={props.onDelete}
           />
         ),

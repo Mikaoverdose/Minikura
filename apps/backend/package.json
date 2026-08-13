@@ -22,6 +22,7 @@
     "typescript": "^7.0.2"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1109.0",
     "@elysiajs/node": "^1.4.5",
     "@kubernetes/client-node": "^1.4.0",
     "@minikura/api": "workspace:*",

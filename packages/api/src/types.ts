@@ -183,6 +183,7 @@ export type CreateServerRequest = {
   motd?: string | null;
   level_seed?: string | null;
   level_type?: string | null;
+  running?: boolean;
 };
 
 export type UpdateServerRequest = {
@@ -208,4 +209,5 @@ export type UpdateServerRequest = {
   motd?: string | null;
   level_seed?: string | null;
   level_type?: string | null;
+  running?: boolean;
 };

@@ -65,6 +65,9 @@ export default function ServersPage() {
               type="normal"
               servers={normalServers}
               onEdit={isAdmin ? (id) => router.push(`/dashboard/servers/edit/${id}`) : undefined}
+              onManage={
+                isAdmin ? (id) => router.push(`/dashboard/servers/manage/${id}`) : undefined
+              }
               onDelete={isAdmin ? (id) => setDeleteTarget({ id, type: "normal" }) : undefined}
             />
           </ResourceSection>

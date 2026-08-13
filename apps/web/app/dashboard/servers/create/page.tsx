@@ -35,6 +35,11 @@ export default function CreateServerPage() {
       throw new Error(errorMsg);
     }
 
+    const pluginResponse = await api.api.registry
+      .servers({ serverId: payload.id })
+      .plugins.put({ artifactIds: data.registryArtifactIds });
+    if (pluginResponse.error) throw new Error("Server created, but plugin deployment failed");
+
     router.push("/dashboard/servers");
   };
 

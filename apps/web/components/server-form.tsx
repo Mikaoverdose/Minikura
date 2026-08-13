@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AdvancedPanel } from "@/components/server-form/advanced-panel";
 import { AutomationPanel } from "@/components/server-form/automation-panel";
 import { BasicPanel } from "@/components/server-form/basic-panel";
@@ -14,6 +14,7 @@ import type { ServerFormData, UpdateServerField } from "@/components/server-form
 import { WorldPanel } from "@/components/server-form/world-panel";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { api } from "@/lib/api-client";
 
 export type {
   Difficulty,
@@ -87,6 +88,7 @@ export function ServerForm({
     autostopTimeoutInit: initialData?.autostopTimeoutInit || "1800",
     autostopPeriod: initialData?.autostopPeriod || "10",
     removeOldPlugins: initialData?.removeOldPlugins ?? false,
+    registryArtifactIds: initialData?.registryArtifactIds ?? [],
     timezone: initialData?.timezone || "UTC",
     uid: initialData?.uid || "1000",
     gid: initialData?.gid || "1000",
@@ -100,6 +102,22 @@ export function ServerForm({
     })),
   });
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!initialData?.id) return;
+    void api.api.registry
+      .servers({ serverId: initialData.id })
+      .plugins.get()
+      .then(({ data, error: responseError }) => {
+        if (responseError) throw responseError;
+        const plugins = (data ?? []) as Array<{ artifact_id: string }>;
+        setFormData((previous) => ({
+          ...previous,
+          registryArtifactIds: plugins.map((plugin) => plugin.artifact_id),
+        }));
+      })
+      .catch(() => setError("Failed to load deployed registry plugins"));
+  }, [initialData?.id]);
 
   const updateField: UpdateServerField = (key, value) => {
     setFormData((previous) => ({ ...previous, [key]: value }));

@@ -125,6 +125,17 @@ enum MinecraftServerJarType {
   FOLIA
 }
 
+enum PluginProvider {
+  MODRINTH
+  HANGAR
+  UPLOAD
+}
+
+enum PluginStorageMode {
+  REMOTE
+  S3
+}
+
 model Server {
   id                   String                      @id @default(cuid())
   type                 ServerType
@@ -137,7 +148,9 @@ model Server {
   service_type         ServiceType                 @default(CLUSTER_IP)
   node_port            Int?
   env_variables        CustomEnvironmentVariable[] @relation("ServerEnvVars")
+  plugins              ServerPlugin[]
   api_key              String                      @unique
+  running              Boolean                     @default(true)
 
   jar_type             MinecraftServerJarType      @default(VANILLA)
   minecraft_version    String                      @default("LATEST")
@@ -157,6 +170,49 @@ model Server {
 
   created_at           DateTime                    @default(now())
   updated_at           DateTime                    @updatedAt
+}
+
+model PluginArtifact {
+  id                  String            @id @default(cuid())
+  provider            PluginProvider
+  provider_project_id String
+  provider_version_id String
+  name                String
+  version             String
+  platform            String
+  minecraft_versions  String[]
+  filename            String
+  size                Int
+  sha256              String
+  source_url          String?
+  storage_mode        PluginStorageMode @default(REMOTE)
+  object_key          String?
+  download_token      String            @unique @default(cuid())
+  license             String?
+  description         String?
+  author              String?
+  icon_url            String?
+  project_url         String?
+  categories          String[]
+  provider_updated_at DateTime?
+  created_at          DateTime          @default(now())
+  server_plugins      ServerPlugin[]
+
+  @@unique([provider, provider_version_id, platform, filename])
+  @@index([sha256])
+}
+
+model ServerPlugin {
+  id          String         @id @default(cuid())
+  server_id   String
+  artifact_id String
+  enabled     Boolean        @default(true)
+  created_at  DateTime       @default(now())
+  server      Server         @relation(fields: [server_id], references: [id], onDelete: Cascade)
+  artifact    PluginArtifact @relation(fields: [artifact_id], references: [id], onDelete: Restrict)
+
+  @@unique([server_id, artifact_id])
+  @@index([server_id, enabled])
 }
 
 model CustomEnvironmentVariable {

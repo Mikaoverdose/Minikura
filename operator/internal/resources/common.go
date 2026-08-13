@@ -15,7 +15,7 @@ const (
 	MinecraftImage       = "itzg/minecraft-server"
 	ProxyImage           = "itzg/mc-proxy:latest"
 	ContainerPort        = 25565
-	DefaultHeapPercent   = 80
+	DefaultHeapPercent   = 60
 	DefaultMemoryLimitMB = 2048
 	MinHeapMB            = 256
 )
