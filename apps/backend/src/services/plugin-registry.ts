@@ -80,6 +80,16 @@ type ModrinthVersion = {
   }>;
 };
 
+type ModrinthProject = {
+  title: string;
+  description: string;
+  icon_url?: string;
+  license?: { id?: string; name?: string };
+  categories: string[];
+  updated?: string;
+  slug?: string;
+};
+
 type HangarProject = {
   namespace: { owner: string; slug: string };
   name: string;
@@ -318,6 +328,12 @@ export class PluginRegistryService {
         sha256,
         source_url: input.downloadUrl,
         license: input.license,
+        description: input.description,
+        author: input.author,
+        icon_url: input.iconUrl,
+        project_url: input.projectUrl,
+        categories: input.categories ?? [],
+        provider_updated_at: input.updatedAt ? new Date(input.updatedAt) : null,
       },
     });
     return artifact;
@@ -404,10 +420,80 @@ export class PluginRegistryService {
   }
 
   async listArtifacts() {
+    const missingMetadata = await prisma.pluginArtifact.findMany({
+      where: {
+        provider: { in: ["MODRINTH", "HANGAR"] },
+        icon_url: null,
+      },
+    });
+    await Promise.allSettled(
+      missingMetadata.map(async (artifact) => {
+        const project = await this.project(artifact.provider, artifact.provider_project_id);
+        await prisma.pluginArtifact.update({
+          where: { id: artifact.id },
+          data: {
+            name: project.name,
+            description: project.description,
+            author: project.author || artifact.author,
+            icon_url: project.iconUrl,
+            project_url: project.projectUrl,
+            license: project.license,
+            categories: project.categories,
+            provider_updated_at: project.updatedAt ? new Date(project.updatedAt) : null,
+          },
+        });
+      })
+    );
     return prisma.pluginArtifact.findMany({
       include: { server_plugins: { select: { server_id: true } } },
       orderBy: { created_at: "desc" },
     });
+  }
+
+  private async project(provider: PluginProvider, projectId: string): Promise<RegistryProject> {
+    if (provider === "MODRINTH") {
+      const project = await registryFetch<ModrinthProject>(
+        `https://api.modrinth.com/v2/project/${encodeURIComponent(projectId)}`
+      );
+      return {
+        provider,
+        projectId,
+        name: project.title,
+        description: project.description,
+        iconUrl: project.icon_url ?? null,
+        downloads: 0,
+        license: project.license?.id ?? project.license?.name ?? null,
+        author: "",
+        categories: project.categories,
+        minecraftVersions: [],
+        updatedAt: project.updated ?? null,
+        projectUrl: `https://modrinth.com/plugin/${project.slug ?? projectId}`,
+      };
+    }
+
+    if (provider === "HANGAR") {
+      const [owner, slug] = projectId.split("/", 2);
+      if (!owner || !slug) throw new ValidationError("Invalid Hangar project ID");
+      const project = await registryFetch<HangarProject>(
+        `https://hangar.papermc.io/api/v1/projects/${encodeURIComponent(owner)}/${encodeURIComponent(slug)}`
+      );
+      return {
+        provider,
+        projectId,
+        name: project.name,
+        description: project.description,
+        iconUrl: project.avatarUrl ?? null,
+        downloads: project.stats.downloads,
+        license: project.settings?.license?.type ?? project.settings?.license?.name ?? null,
+        author: project.memberNames?.[0] ?? owner,
+        categories: project.category ? [project.category] : [],
+        minecraftVersions: Object.values(project.supportedPlatforms ?? {}).flat(),
+        updatedAt: project.lastUpdated ?? null,
+        projectUrl: `https://hangar.papermc.io/${owner}/${slug}`,
+      };
+    }
+
+    throw new ValidationError("Uploaded plugins do not have provider metadata");
   }
 
   async deleteArtifact(artifactId: string): Promise<string[]> {
